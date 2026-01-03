@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "arxiv-cli output envelope",
+  "type": "object",
+  "required": ["schema", "meta", "summary", "status", "data", "errors"],
+  "properties": {
+    "schema": { "type": "string", "pattern": "^arxiv\\.[a-z.]+\\.v1$" },
+    "meta": {
+      "type": "object",
+      "required": ["tool", "version", "timestamp"],
+      "properties": {
+        "tool": { "type": "string", "const": "arxiv" },
+        "version": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "request_id": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "summary": { "type": "string" },
+    "status": { "type": "string", "enum": ["success", "warn", "error"] },
+    "data": { "type": "object" },
+    "errors": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": false
+}
