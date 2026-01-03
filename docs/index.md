@@ -41,6 +41,9 @@ node dist/cli.js search "cat:cs.AI" --require-license
 ### Review FAQs
 - See: `docs/faq.md`
 
+### Understand the repository layout
+- See: `docs/structure.md`
+
 ### Track roadmap ideas
 - See: `docs/roadmap.md`
 
@@ -61,3 +64,4 @@ Fix:
 - Governance: `GOVERNANCE.md`
 - Security: `SECURITY.md`
 - Output schema: `schemas/cli-output.schema.json`
+- FAQ alias: `docs/FAQ.md`
