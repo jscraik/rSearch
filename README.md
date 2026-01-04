@@ -1,6 +1,9 @@
 # arXiv-CLI helps developers search, fetch, and download arXiv papers from the terminal
 
 [![License](https://img.shields.io/badge/license-MIT-informational.svg)](LICENSE)
+[![npm](https://img.shields.io/npm/v/arxiv-cli)](https://www.npmjs.com/package/arxiv-cli)
+[![CI](https://github.com/jscraik/arXiv-CLI/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jscraik/arXiv-CLI/actions/workflows/ci.yml)
+[![Security Policy](https://img.shields.io/badge/security-policy-informational.svg)](SECURITY.md)
 [![Issues](https://img.shields.io/github/issues/jscraik/arXiv-CLI)](https://github.com/jscraik/arXiv-CLI/issues)
 
 One sentence: This repo provides a Node/TypeScript CLI for arXiv search, metadata fetch, downloads, category browsing, and URL output.

@@ -53,9 +53,15 @@ git push origin my-change
 - Steps:
   1) Update `src/cli.ts`.
   2) Add tests in `tests/`.
-  3) Run `npm run typecheck`, `npm test`, and `npm run audit`.
+  3) Run `npm run lint:types`, `npm test`, and `npm run audit`.
 - Verify:
   - Tests pass and help output is correct.
+
+## Code style expectations
+- Keep TypeScript strict and explicit where the compiler cannot infer intent.
+- Prefer small, testable functions in `src/arxiv` and `src/utils`.
+- Match existing formatting and naming conventions.
+- Ensure `npm run lint:types` and `npm test` pass before opening a PR.
 
 ### Update docs
 - What you get: user-facing documentation aligned with the CLI.

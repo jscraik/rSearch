@@ -20,6 +20,7 @@
     "postbuild": "node scripts/add-shebang.cjs",
     "dev": "tsx src/cli.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint:types": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "audit": "npm audit --audit-level=high",
     "ci": "npm run typecheck && npm test && npm run build"
