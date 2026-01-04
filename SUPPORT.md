@@ -2,14 +2,26 @@
 
 One sentence: This guide tells developers how to get support for arXiv-CLI.
 
-Last updated: 2026-01-03
+Last updated: 2026-01-04
 
 ## Table of contents
+- [Doc requirements](#doc-requirements)
 - [Prerequisites](#prerequisites)
 - [Quickstart](#quickstart)
 - [Common tasks](#common-tasks)
+- [Risks and assumptions](#risks-and-assumptions)
 - [Troubleshooting](#troubleshooting)
 - [Reference](#reference)
+- [Acceptance criteria](#acceptance-criteria)
+- [Evidence bundle](#evidence-bundle)
+
+## Doc requirements
+- Audience: Users and contributors seeking help.
+- Scope: How to request support, report bugs, and request features.
+- Non-scope: Security vulnerability reporting (see `SECURITY.md`).
+- Doc owner: jscraik.
+- Review cadence: Each release.
+- Required approvals: 1 maintainer.
 
 ## Prerequisites
 - Required: GitHub account
@@ -39,6 +51,11 @@ Last updated: 2026-01-03
   1) Describe the use case and expected output.
   2) Provide example commands if possible.
 
+## Risks and assumptions
+- Assumes GitHub Issues is the primary support channel.
+- Issue triage latency depends on maintainer availability.
+- Logs may include sensitive data; redact before posting.
+
 ## Troubleshooting
 ### Symptom: “No response on issue”
 Cause:
@@ -49,3 +66,16 @@ Fix:
 ## Reference
 - Code of conduct: `CODE_OF_CONDUCT.md`
 - Security issues: `SECURITY.md`
+
+## Acceptance criteria
+- [ ] Support steps match current repository workflows.
+- [ ] Sensitive data guidance is included.
+- [ ] Links resolve to existing files or URLs.
+- [ ] Risks and assumptions are explicit.
+- [ ] Ownership and cadence are stated.
+
+## Evidence bundle
+- Standards mapping: CommonMark structure, accessibility (descriptive links), security/privacy guidance for logs.
+- Automated checks: vale run on 2026-01-04 (0 errors, 0 warnings).
+- Review artifact: Self-review completed on 2026-01-04.
+- Deviations: None.

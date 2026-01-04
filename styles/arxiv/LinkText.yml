@@ -1,0 +1,7 @@
+extends: existence
+message: "Avoid '%s'. Use descriptive link text instead."
+level: warning
+ignorecase: true
+tokens:
+  - '\\bclick here\\b'
+  - '\\bhere\\b'

@@ -1,5 +1,15 @@
 import { createInterface } from "node:readline";
 
+/**
+ * Reads all input from stdin as a single string.
+ *
+ * @returns Promise resolving to stdin contents, or empty string if TTY
+ *
+ * @remarks
+ * Returns empty string immediately if stdin is a TTY (interactive terminal).
+ *
+ * @public
+ */
 export const readStdin = async (): Promise<string> => {
   if (process.stdin.isTTY) {
     return "";
@@ -12,6 +22,16 @@ export const readStdin = async (): Promise<string> => {
   return chunks.join("");
 };
 
+/**
+ * Reads stdin as a list of lines.
+ *
+ * @returns Promise resolving to array of non-empty trimmed lines
+ *
+ * @remarks
+ * Returns empty array immediately if stdin is a TTY.
+ *
+ * @public
+ */
 export const readLines = async (): Promise<string[]> => {
   if (process.stdin.isTTY) {
     return [];
@@ -26,4 +46,11 @@ export const readLines = async (): Promise<string[]> => {
   return lines.filter(Boolean);
 };
 
+/**
+ * Checks if stdout is a terminal (TTY).
+ *
+ * @returns `true` if stdout is a TTY, `false` otherwise
+ *
+ * @public
+ */
 export const isTty = () => process.stdout.isTTY ?? false;

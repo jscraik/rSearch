@@ -1,0 +1,9 @@
+extends: existence
+message: "Consider removing '%s' for clearer, more direct writing."
+level: warning
+ignorecase: true
+tokens:
+  - '\\bjust\\b'
+  - '\\bsimply\\b'
+  - '\\bobviously\\b'
+  - '\\bclearly\\b'

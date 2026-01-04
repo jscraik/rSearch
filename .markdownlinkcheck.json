@@ -1,0 +1,20 @@
+{
+  "ignorePatterns": [
+    "^https://github.com/jscraik/arXiv-CLI",
+    "^https://arxiv.org",
+    "^https://export.arxiv.org",
+    "^https://www.npmjs.com/package/arxiv-cli",
+    "^https://img.shields.io"
+  ],
+  "replacementPatterns": [
+    {
+      "pattern": "^/",
+      "replacement": "https://github.com/jscraik/arXiv-CLI/blob/main/"
+    }
+  ],
+  "timeout": "10s",
+  "retryOn429": true,
+  "retryCount": 3,
+  "fallbackRetryDelay": "5000",
+  "aliveStatusCodes": [200, 206, 301, 302, 303, 307, 308, 403]
+}

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts", "src/arxiv/client.ts", "src/arxiv/types.ts", "src/config.ts", "src/arxiv/taxonomy.ts"],
+  "out": "docs/api",
+  "plugin": ["typedoc-plugin-markdown"],
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "excludeInternal": true,
+  "categorizeByGroup": true,
+  "defaultCategory": "Other",
+  "categoryOrder": ["Client", "Types", "Configuration", "Taxonomy", "*"],
+  "readme": "none",
+  "gitRevision": "main"
+}

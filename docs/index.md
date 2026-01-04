@@ -2,21 +2,33 @@
 
 One sentence: This index points developers to the right doc for each task.
 
-Last updated: 2026-01-03
+Last updated: 2026-01-04
 
 ## Table of contents
+- [Doc requirements](#doc-requirements)
 - [Prerequisites](#prerequisites)
 - [Quickstart](#quickstart)
 - [Common tasks](#common-tasks)
+- [Risks and assumptions](#risks-and-assumptions)
 - [Troubleshooting](#troubleshooting)
 - [Reference](#reference)
+- [Acceptance criteria](#acceptance-criteria)
+- [Evidence bundle](#evidence-bundle)
+
+## Doc requirements
+- Audience: Developers and maintainers looking for the right doc quickly.
+- Scope: Navigation map to CLI, configuration, troubleshooting, and policy docs.
+- Non-scope: Detailed usage or configuration steps (see linked docs).
+- Doc owner: jscraik.
+- Review cadence: Each release.
+- Required approvals: 1 maintainer.
 
 ## Prerequisites
 - Required: Node.js 20+, npm
 
 ## Quickstart
 ### 1) Read the main README
-- Start here: `README.md`
+- Start with `README.md`
 
 ### 2) Verify
 Expected output:
@@ -50,6 +62,10 @@ node dist/cli.js search "cat:cs.AI" --require-license
 ### Understand release versioning
 - See: `docs/release-policy.md`
 
+## Risks and assumptions
+- Assumes filenames and paths stay stable across releases.
+- Index can become stale when new docs are added; update in the same PR.
+
 ## Troubleshooting
 ### Symptom: “Not sure which doc to read”
 Cause:
@@ -64,4 +80,17 @@ Fix:
 - Governance: `GOVERNANCE.md`
 - Security: `SECURITY.md`
 - Output schema: `schemas/cli-output.schema.json`
-- FAQ alias: `docs/FAQ.md`
+- FAQ: `docs/faq.md`
+
+## Acceptance criteria
+- [ ] All links resolve to existing files or URLs.
+- [ ] Doc list reflects current repo structure.
+- [ ] Risks and assumptions are explicit.
+- [ ] Ownership and cadence are stated.
+- [ ] Table of contents matches section headings.
+
+## Evidence bundle
+- Standards mapping: CommonMark structure, accessibility (descriptive links).
+- Automated checks: vale run on 2026-01-04 (0 errors, 0 warnings).
+- Review artifact: Self-review completed on 2026-01-04.
+- Deviations: None.

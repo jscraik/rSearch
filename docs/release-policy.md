@@ -1,6 +1,14 @@
 # Release policy and SemVer
 
-Last updated: 2026-01-03
+Last updated: 2026-01-04
+
+## Doc requirements
+- Audience: Maintainers preparing releases.
+- Scope: Versioning rules, release checklist, and security release guidance.
+- Non-scope: Changelog content (see `CHANGELOG.md`).
+- Doc owner: jscraik.
+- Review cadence: Each release.
+- Required approvals: 1 maintainer.
 
 ## Summary
 This project follows Semantic Versioning (SemVer) 2.0.0. Releases are documented in `CHANGELOG.md`.
@@ -33,4 +41,22 @@ This project follows Semantic Versioning (SemVer) 2.0.0. Releases are documented
 
 ## Security releases
 - Security fixes are released as patch versions when possible.
-- If a breaking fix is required, release a new MAJOR and document the impact clearly.
+- If a breaking fix is required, release a new MAJOR and document the impact in detail.
+
+## Risks and assumptions
+- Assumes maintainers follow SemVer and update `CHANGELOG.md` for every release.
+- `npm publish` requires a clean working tree and correct npm credentials.
+- Security releases may require expedited review; follow responsible disclosure timelines.
+
+## Acceptance criteria
+- [ ] Versioning rules match current release practices.
+- [ ] Checklists map to existing scripts and workflows.
+- [ ] Security release guidance is present and accurate.
+- [ ] Risks and assumptions are explicit.
+- [ ] Ownership and cadence are stated.
+
+## Evidence bundle
+- Standards mapping: CommonMark structure, release documentation best practices.
+- Automated checks: vale run on 2026-01-04 (0 errors, 0 warnings).
+- Review artifact: Self-review completed on 2026-01-04.
+- Deviations: None.

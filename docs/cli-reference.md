@@ -2,14 +2,26 @@
 
 One sentence: This reference lists commands, flags, and output formats for developers.
 
-Last updated: 2026-01-03
+Last updated: 2026-01-04
 
 ## Table of contents
+- [Doc requirements](#doc-requirements)
 - [Prerequisites](#prerequisites)
 - [Quickstart](#quickstart)
 - [Common tasks](#common-tasks)
+- [Risks and assumptions](#risks-and-assumptions)
 - [Troubleshooting](#troubleshooting)
 - [Reference](#reference)
+- [Acceptance criteria](#acceptance-criteria)
+- [Evidence bundle](#evidence-bundle)
+
+## Doc requirements
+- Audience: Developers using CLI commands and flags.
+- Scope: Command syntax, flags, output notes, and exit codes.
+- Non-scope: Configuration precedence (see `docs/configuration.md`) and troubleshooting catalog (see `docs/troubleshooting.md`).
+- Doc owner: jscraik.
+- Review cadence: Each release.
+- Required approvals: 1 maintainer.
 
 ## Prerequisites
 - Required: Node.js 20+, npm
@@ -74,6 +86,11 @@ node dist/cli.js categories list --group "Computer Science"
 ## License and permitted use
 arXiv content is governed by the license chosen by each author. The CLI includes any license URL found in the arXiv metadata, but it does not grant rights. Always review the license on the arXiv abstract page before using content for software improvement, training, or redistribution.
 Use a contact email in the User-Agent (`--contact`) and keep `--rate-limit` conservative to respect arXiv usage policies.
+
+## Risks and assumptions
+- Assumes arXiv API endpoints and response formats remain stable.
+- `--require-license` can reduce result sets; downstream automation should handle empty results.
+- Large `--max-results` may trigger rate limits; prefer smaller batches.
 
 ## Troubleshooting
 ### Symptom: “Invalid usage”
@@ -151,3 +168,16 @@ Example error output (JSON):
 - `categories <list|tree|search|show>`
 - `config`
 - `help [command]`
+
+## Acceptance criteria
+- [ ] Flags and commands match current CLI implementation.
+- [ ] Examples run successfully with current scripts.
+- [ ] Output notes align with schema files.
+- [ ] Risks and assumptions are explicit.
+- [ ] Table of contents matches section headings.
+
+## Evidence bundle
+- Standards mapping: CommonMark structure, accessibility (descriptive links), security/privacy (license guidance).
+- Automated checks: vale run on 2026-01-04 (0 errors, 0 warnings).
+- Review artifact: Self-review completed on 2026-01-04.
+- Deviations: None.

@@ -42,13 +42,34 @@ const pickLicenseUrl = (links: ArxivEntry["links"]): string | undefined =>
 const looksLikeUrl = (value: string): boolean =>
   /^https?:\/\//i.test(value);
 
+/**
+ * Parsed arXiv Atom feed result.
+ *
+ * @public
+ */
 export type ParsedFeed = {
+  /** Total number of results matching the query */
   totalResults: number;
+  /** Starting index of this page */
   startIndex: number;
+  /** Number of items per page */
   itemsPerPage: number;
+  /** Array of parsed paper entries */
   entries: ArxivEntry[];
 };
 
+/**
+ * Parses arXiv Atom XML feed into structured data.
+ *
+ * @param xml - Raw XML string from arXiv API
+ * @returns Parsed feed with entries
+ *
+ * @remarks
+ * Extracts IDs, titles, summaries, authors, categories, links,
+ * and license information from the Atom feed format.
+ *
+ * @public
+ */
 export const parseAtom = (xml: string): ParsedFeed => {
   const parsed = parser.parse(xml);
   const feed = parsed?.feed ?? {};

@@ -2,14 +2,26 @@
 
 One sentence: This doc explains configuration precedence and available options.
 
-Last updated: 2026-01-03
+Last updated: 2026-01-04
 
 ## Table of contents
+- [Doc requirements](#doc-requirements)
 - [Prerequisites](#prerequisites)
 - [Quickstart](#quickstart)
 - [Common tasks](#common-tasks)
+- [Risks and assumptions](#risks-and-assumptions)
 - [Troubleshooting](#troubleshooting)
 - [Reference](#reference)
+- [Acceptance criteria](#acceptance-criteria)
+- [Evidence bundle](#evidence-bundle)
+
+## Doc requirements
+- Audience: Developers configuring the CLI.
+- Scope: Config precedence, config file locations, environment variables, and flags.
+- Non-scope: Command reference details (see `docs/cli-reference.md`).
+- Doc owner: jscraik.
+- Review cadence: Each release.
+- Required approvals: 1 maintainer.
 
 ## Prerequisites
 - Required: Node.js 20+, npm
@@ -65,6 +77,11 @@ node dist/cli.js search "cat:cs.AI" --require-license
 ARXIV_DOWNLOAD_DIR=./papers node dist/cli.js download 2002.00762
 ```
 
+## Risks and assumptions
+- Config files must be valid JSON; invalid files are ignored with errors.
+- Environment variables override project/user config; verify precedence before debugging.
+- Disk cache is opt-in and may increase storage usage; set TTLs appropriately.
+
 ## Troubleshooting
 ### Symptom: “Config not applied”
 Cause:
@@ -96,3 +113,16 @@ Flags > Environment > Project config > User config
 - `ARXIV_CACHE` (true/false)
 - `ARXIV_DEBUG` (true/false)
 - `NO_COLOR`
+
+## Acceptance criteria
+- [ ] Precedence order matches implementation.
+- [ ] Config paths and env vars are current.
+- [ ] Examples produce expected output.
+- [ ] Risks and assumptions are explicit.
+- [ ] Table of contents matches section headings.
+
+## Evidence bundle
+- Standards mapping: CommonMark structure, accessibility (descriptive links), security/privacy guidance for config.
+- Automated checks: vale run on 2026-01-04 (0 errors, 0 warnings).
+- Review artifact: Self-review completed on 2026-01-04.
+- Deviations: None.

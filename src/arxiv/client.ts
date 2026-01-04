@@ -7,18 +7,55 @@ import { dirname, resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { VERSION } from "../version.js";
 
+/**
+ * Configuration options for the arXiv API client.
+ *
+ * @remarks
+ * This configuration controls API endpoint URLs, request behavior,
+ * caching, retry logic, and debugging output.
+ *
+ * @example
+ * ```ts
+ * const config: ArxivClientConfig = {
+ *   apiBaseUrl: "https://export.arxiv.org/api/query",
+ *   pdfBaseUrl: "https://arxiv.org/pdf/",
+ *   userAgent: "my-app/1.0 (mailto:me@example.com)",
+ *   timeoutMs: 20000,
+ *   minIntervalMs: 3000,
+ *   pageSize: 100,
+ *   maxRetries: 3,
+ *   retryBaseDelayMs: 500,
+ *   cache: true,
+ *   debug: false
+ * };
+ * ```
+ *
+ * @public
+ */
 export type ArxivClientConfig = {
+  /** Base URL for the arXiv API query endpoint. */
   apiBaseUrl: string;
+  /** Base URL for arXiv PDF downloads. */
   pdfBaseUrl: string;
+  /** User-Agent header for API requests. */
   userAgent: string;
+  /** HTTP request timeout in milliseconds. */
   timeoutMs: number;
+  /** Minimum interval between API requests in milliseconds (rate limiting). */
   minIntervalMs: number;
+  /** Enable in-memory caching of API responses. */
   cache: boolean;
+  /** Optional directory for on-disk HTTP cache. */
   cacheDir?: string;
+  /** Optional TTL for on-disk cache entries in milliseconds. */
   cacheTtlMs?: number;
+  /** Default page size for paginated queries. */
   pageSize: number;
+  /** Maximum number of retry attempts for transient failures. */
   maxRetries: number;
+  /** Base delay in milliseconds for exponential backoff retries. */
   retryBaseDelayMs: number;
+  /** Enable debug logging to stderr. */
   debug: boolean;
 };
 
@@ -37,20 +74,91 @@ const defaultConfig: ArxivClientConfig = {
   debug: false
 };
 
+/**
+ * arXiv API client for searching, fetching metadata, and downloading papers.
+ *
+ * @remarks
+ * The client handles rate limiting, retries with exponential backoff,
+ * caching, and pagination automatically. It supports both search queries
+ * and ID-based lookups via the arXiv Atom API.
+ *
+ * @example
+ * ```ts
+ * const client = new ArxivClient({ userAgent: "my-app/1.0" });
+ * const results = await client.search({
+ *   searchQuery: "cat:cs.AI",
+ *   maxResults: 10
+ * });
+ * console.log(results.entries);
+ * ```
+ *
+ * @public
+ */
 export class ArxivClient {
   private config: ArxivClientConfig;
   private cache = new Map<string, string>();
   private limiter: RateLimiter;
 
+  /**
+   * Creates a new arXiv API client with optional configuration overrides.
+   *
+   * @param config - Partial configuration to override defaults
+   *
+   * @example
+   * ```ts
+   * const client = new ArxivClient({
+   *   timeoutMs: 30000,
+   *   minIntervalMs: 5000,
+   *   debug: true
+   * });
+   * ```
+   */
   constructor(config: Partial<ArxivClientConfig> = {}) {
     this.config = { ...defaultConfig, ...config };
     this.limiter = new RateLimiter(this.config.minIntervalMs);
   }
 
+  /**
+   * Returns a copy of the current client configuration.
+   *
+   * @returns A shallow copy of the configuration object
+   */
   getConfig(): ArxivClientConfig {
     return { ...this.config };
   }
 
+  /**
+   * Searches arXiv with the given options and returns matching entries.
+   *
+   * @param options - Search parameters including query, ID list, and pagination
+   * @returns Promise resolving to search results with entries and metadata
+   * @throws {Error} If pageSize exceeds MAX_PAGE_SIZE (2000)
+   * @throws {Error} If maxResults exceeds MAX_TOTAL_RESULTS (30000)
+   * @throws {Error} If start is negative
+   *
+   * @example
+   * ```ts
+   * const results = await client.search({
+   *   searchQuery: "cat:cs.AI AND ti:neural",
+   *   maxResults: 50,
+   *   sortBy: "relevance",
+   *   sortOrder: "descending"
+   * });
+   * console.log(`Found ${results.totalResults} papers`);
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Fetch by specific IDs
+   * const results = await client.search({
+   *   idList: ["2301.00001", "2301.00002"]
+   * });
+   * ```
+   *
+   * @remarks
+   * The client automatically handles pagination when maxResults exceeds pageSize.
+   * Multiple API requests are made transparently to fetch all requested results.
+   */
   async search(options: ArxivSearchOptions): Promise<ArxivSearchResult> {
     const requestedPageSize = options.pageSize ?? this.config.pageSize;
     if (requestedPageSize > MAX_PAGE_SIZE) {
@@ -121,10 +229,53 @@ export class ArxivClient {
     };
   }
 
+  /**
+   * Fetches metadata for specific arXiv paper IDs.
+   *
+   * @param ids - Array of arXiv paper IDs (e.g., ["2301.00001", "cs.AI/0001001"])
+   * @param options - Optional search parameters (exclude idList)
+   * @returns Promise resolving to search results for the specified IDs
+   *
+   * @example
+   * ```ts
+   * const results = await client.fetchByIds([
+   *   "2301.00001",
+   *   "2101.00001"
+   * ], { sortBy: "submittedDate" });
+   * ```
+   */
   async fetchByIds(ids: string[], options: Omit<ArxivSearchOptions, "idList"> = {}) {
     return this.search({ ...options, idList: ids });
   }
 
+  /**
+   * Downloads PDF files for the given arXiv IDs to a directory.
+   *
+   * @param ids - Array of arXiv paper IDs to download
+   * @param outputDir - Directory path where PDFs will be saved
+   * @param overwrite - Whether to overwrite existing files (default: false)
+   * @returns Promise resolving to download results with status per ID
+   *
+   * @example
+   * ```ts
+   * const results = await client.download(
+   *   ["2301.00001", "2101.00001"],
+   *   "./papers",
+   *   false
+   * );
+   * for (const r of results) {
+   *   if (r.status === "downloaded") {
+   *     console.log(`${r.id} -> ${r.path}`);
+   *   }
+   * }
+   * ```
+   *
+   * @remarks
+   * Each result has a status:
+   * - `"downloaded"`: Successfully saved to outputDir
+   * - `"skipped"`: File exists and overwrite is false
+   * - `"failed"`: Network or file system error (see error property)
+   */
   async download(ids: string[], outputDir: string, overwrite = false): Promise<{
     id: string;
     path: string;
@@ -169,6 +320,22 @@ export class ArxivClient {
     return results;
   }
 
+  /**
+   * Downloads a single arXiv PDF as a byte buffer.
+   *
+   * @param id - arXiv paper ID (e.g., "2301.00001" or "2301.00001.pdf")
+   * @returns Promise resolving to the PDF file contents as a Uint8Array
+   *
+   * @example
+   * ```ts
+   * const buffer = await client.downloadPdfBuffer("2301.00001");
+   * // buffer is a Uint8Array containing the PDF data
+   * ```
+   *
+   * @remarks
+   * The ID is normalized: whitespace is removed and ".pdf" suffix is stripped if present.
+   * Useful for in-memory PDF processing without writing to disk.
+   */
   async downloadPdfBuffer(id: string): Promise<Uint8Array> {
     const safeId = id.replace(/\s+/g, "").replace(/\.pdf$/i, "");
     const pdfUrl = `${this.config.pdfBaseUrl}${safeId}`;

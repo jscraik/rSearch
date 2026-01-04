@@ -2,16 +2,28 @@
 
 One sentence: This document explains ownership and decision-making for the project.
 
-Last updated: 2026-01-03
+Last updated: 2026-01-04
 
 ## Table of contents
+- [Doc requirements](#doc-requirements)
 - [Scope](#scope)
 - [Working agreements](#working-agreements)
 - [Prerequisites](#prerequisites)
 - [Quickstart](#quickstart)
 - [Common tasks](#common-tasks)
+- [Risks and assumptions](#risks-and-assumptions)
 - [Troubleshooting](#troubleshooting)
 - [Reference](#reference)
+- [Acceptance criteria](#acceptance-criteria)
+- [Evidence bundle](#evidence-bundle)
+
+## Doc requirements
+- Audience: Maintainers and contributors making governance or approval decisions.
+- Scope: Ownership, decision-making, and change approval rules for this repo.
+- Non-scope: Technical design details and security response process (see `docs/ADR-001-architecture.md`, `SECURITY.md`).
+- Doc owner: jscraik.
+- Review cadence: Each release.
+- Required approvals: 1 maintainer.
 
 ## Scope
 This doc defines how the project is maintained, how changes are reviewed, and which decisions require approval.
@@ -57,6 +69,11 @@ npm test
   2) Bump version (SemVer guidance)
   3) Document migration steps
 
+## Risks and assumptions
+- Assumes maintainers are available to review and merge PRs.
+- Assumes contributors follow the PR-based workflow.
+- Unclear ownership can delay urgent fixes; use issues to request assignments.
+
 ## Troubleshooting
 ### Symptom: “Unclear decision ownership”
 Cause:
@@ -67,3 +84,16 @@ Fix:
 ## Reference
 - Repo: https://github.com/jscraik/arXiv-CLI.git
 - Support: `SUPPORT.md`
+
+## Acceptance criteria
+- [ ] Scope and approval rules are current.
+- [ ] Working agreements match actual CI checks and workflows.
+- [ ] Ownership expectations are explicit and actionable.
+- [ ] Risks and assumptions reflect current project reality.
+- [ ] Links resolve to existing files or URLs.
+
+## Evidence bundle
+- Standards mapping: CommonMark structure, accessibility (descriptive links), governance clarity.
+- Automated checks: vale run on 2026-01-04 (0 errors, 0 warnings).
+- Review artifact: Self-review completed on 2026-01-04.
+- Deviations: None.

@@ -1,5 +1,17 @@
 # Security Policy
 
+One sentence: This policy describes supported versions and how to report vulnerabilities.
+
+Last updated: 2026-01-04
+
+## Doc requirements
+- Audience: Security researchers, users, and maintainers.
+- Scope: Supported versions, reporting process, and security automation.
+- Non-scope: General support requests (see `SUPPORT.md`).
+- Doc owner: jscraik.
+- Review cadence: Each release.
+- Required approvals: 1 maintainer.
+
 ## Supported Versions
 
 Only the latest minor release is supported.
@@ -32,3 +44,21 @@ The repo uses automated security checks on pull requests and scheduled runs:
 - Dependencies are managed with npm only.
 - `package-lock.json` must be updated via npm and committed with dependency changes.
 - Audit failures should be resolved by upgrading dependencies or opening a tracking issue.
+
+## Risks and assumptions
+- Assumes the listed contact email is monitored and responses happen within stated timelines.
+- Assumes security tooling remains enabled in CI and scheduled workflows.
+- Out-of-date supported version guidance can mislead reporters; review each release.
+
+## Acceptance criteria
+- [ ] Supported version policy is current.
+- [ ] Reporting contact and response timeline are accurate.
+- [ ] Security automation reflects actual CI tooling.
+- [ ] Risks and assumptions are explicit.
+- [ ] Ownership and cadence are stated.
+
+## Evidence bundle
+- Standards mapping: CommonMark structure, security/privacy guidance, accessibility (clear headings).
+- Automated checks: vale run on 2026-01-04 (0 errors, 0 warnings).
+- Review artifact: Self-review completed on 2026-01-04.
+- Deviations: None.

@@ -2,28 +2,61 @@ import { load } from "cheerio";
 import { RateLimiter } from "./rateLimiter.js";
 import { VERSION } from "../version.js";
 
+/**
+ * A single arXiv category.
+ *
+ * @public
+ */
 export type TaxonomyCategory = {
+  /** Category ID (e.g., "cs.AI") */
   id: string;
+  /** Human-readable category name */
   name: string;
+  /** Optional description of the category */
   description?: string;
+  /** Group this category belongs to (e.g., "Computer Science") */
   group: string;
 };
 
+/**
+ * A group of related arXiv categories.
+ *
+ * @public
+ */
 export type TaxonomyGroup = {
+  /** Group name */
   name: string;
+  /** Categories in this group */
   categories: TaxonomyCategory[];
 };
 
+/**
+ * Complete arXiv taxonomy result.
+ *
+ * @public
+ */
 export type TaxonomyResult = {
+  /** URL where the taxonomy was fetched from */
   sourceUrl: string;
+  /** Hierarchical groups */
   groups: TaxonomyGroup[];
+  /** Flat list of all categories */
   categories: TaxonomyCategory[];
 };
 
+/**
+ * Configuration for fetching arXiv taxonomy.
+ *
+ * @public
+ */
 export type TaxonomyConfig = {
+  /** URL of the arXiv category taxonomy page */
   taxonomyUrl: string;
+  /** User-Agent header for requests */
   userAgent: string;
+  /** Request timeout in milliseconds */
   timeoutMs: number;
+  /** Minimum interval between requests */
   minIntervalMs: number;
 };
 
@@ -57,6 +90,19 @@ const parseCategoryHeading = (text: string): { id: string; name: string } | null
 const normalizeGroupName = (text: string): string =>
   text.replace(/\s+/g, " ").trim();
 
+/**
+ * Parses arXiv taxonomy HTML into structured data.
+ *
+ * @param html - Raw HTML from arXiv category taxonomy page
+ * @param sourceUrl - URL where the HTML was fetched (included in result)
+ * @returns Parsed taxonomy with groups and categories
+ *
+ * @remarks
+ * Extracts category IDs, names, descriptions, and groupings
+ * from the arXiv category taxonomy page structure.
+ *
+ * @public
+ */
 export const parseTaxonomyHtml = (html: string, sourceUrl: string): TaxonomyResult => {
   const $ = load(html);
   const scope = $("#content").length ? $("#content") : $("main").length ? $("main") : $("body");
@@ -120,6 +166,31 @@ export const parseTaxonomyHtml = (html: string, sourceUrl: string): TaxonomyResu
   };
 };
 
+/**
+ * Fetches the arXiv category taxonomy.
+ *
+ * @param config - Optional configuration overrides
+ * @param options - Options for cache behavior
+ * @returns Promise resolving to parsed taxonomy
+ * @throws {Error} If the HTTP request fails
+ *
+ * @example
+ * ```ts
+ * const taxonomy = await fetchTaxonomy();
+ * console.log(`Found ${taxonomy.categories.length} categories`);
+ * ```
+ *
+ * @example
+ * ```ts
+ * // Force refresh cache
+ * const taxonomy = await fetchTaxonomy({}, { refresh: true });
+ * ```
+ *
+ * @remarks
+ * Results are cached in-memory. Use `{ refresh: true }` to bypass cache.
+ *
+ * @public
+ */
 export const fetchTaxonomy = async (
   config: Partial<TaxonomyConfig> = {},
   options: { refresh?: boolean } = {}

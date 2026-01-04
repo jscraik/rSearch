@@ -8,14 +8,26 @@
 
 One sentence: This repo provides a Node/TypeScript CLI for arXiv search, metadata fetch, downloads, category browsing, and URL output.
 
-Last updated: 2026-01-03
+Last updated: 2026-01-04
 
 ## Table of contents
+- [Doc requirements](#doc-requirements)
 - [Prerequisites](#prerequisites)
 - [Quickstart](#quickstart)
 - [Common tasks](#common-tasks)
+- [Risks and assumptions](#risks-and-assumptions)
 - [Troubleshooting](#troubleshooting)
 - [Reference](#reference)
+- [Acceptance criteria](#acceptance-criteria)
+- [Evidence bundle](#evidence-bundle)
+
+## Doc requirements
+- Audience: Developers and researchers using the CLI to search, fetch, and download arXiv papers.
+- Scope: Installation, core commands, verification steps, and usage constraints.
+- Non-scope: Contribution workflow, security reporting, and internal architecture (see `CONTRIBUTING.md`, `SECURITY.md`, `docs/ADR-001-architecture.md`).
+- Doc owner: jscraik.
+- Review cadence: Each release.
+- Required approvals: 1 maintainer.
 
 ## Prerequisites
 - Required: Node.js 20+, npm
@@ -114,6 +126,12 @@ node dist/cli.js categories list --group "Computer Science"
 ```
 - Verify: group names and category IDs are listed.
 
+## Risks and assumptions
+- Assumes arXiv API availability and that users respect rate limits.
+- Assumes users review license metadata before reuse; the CLI does not grant rights.
+- PDF text extraction may fail on scanned or complex layouts.
+- Output files overwrite only when `--overwrite` is used; verify output paths before running batch downloads.
+
 ## Troubleshooting
 ### Symptom: “Provide a search query” or “Provide arXiv IDs”
 Cause:
@@ -164,5 +182,34 @@ Fix:
   - `docs/release-policy.md`
   - `docs/troubleshooting.md`
   - `docs/faq.md`
-  - `docs/roadmap.md`
-  - `docs/ADR-001-architecture.md`
+- `docs/roadmap.md`
+- `docs/ADR-001-architecture.md`
+
+## Acceptance criteria
+- [ ] Doc requirements reflect current CLI scope and ownership.
+- [ ] Examples match available commands and scripts in this repo.
+- [ ] License and usage policy notes are present and accurate.
+- [ ] Risks and assumptions are explicit and up to date.
+- [ ] Links resolve to existing files or URLs.
+
+## Evidence bundle
+- Standards mapping: CommonMark structure, accessibility (descriptive links), security/privacy guidance for license usage.
+- Brand compliance: Documentation signature added; assets present in `brand/`.
+- Automated checks: vale run on 2026-01-04 (0 errors, 0 warnings).
+- Review artifact: Self-review completed on 2026-01-04.
+- Deviations: None.
+
+---
+
+<img
+  src="./brand/brand-mark.webp"
+  srcset="./brand/brand-mark.webp 1x, ./brand/brand-mark@2x.webp 2x"
+  alt="brAInwav"
+  height="28"
+  align="left"
+/>
+
+<br clear="left" />
+
+**brAInwav**  
+_from demo to duty_

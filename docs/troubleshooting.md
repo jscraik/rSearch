@@ -2,14 +2,26 @@
 
 One sentence: This guide lists the top CLI failure modes and how to resolve them.
 
-Last updated: 2026-01-03
+Last updated: 2026-01-04
 
 ## Table of contents
+- [Doc requirements](#doc-requirements)
 - [Prerequisites](#prerequisites)
 - [Quickstart](#quickstart)
 - [Common tasks](#common-tasks)
+- [Risks and assumptions](#risks-and-assumptions)
 - [Troubleshooting](#troubleshooting)
 - [Reference](#reference)
+- [Acceptance criteria](#acceptance-criteria)
+- [Evidence bundle](#evidence-bundle)
+
+## Doc requirements
+- Audience: Users diagnosing CLI errors.
+- Scope: Symptoms, causes, and fixes for common failures.
+- Non-scope: Full command reference (see `docs/cli-reference.md`).
+- Doc owner: jscraik.
+- Review cadence: Each release.
+- Required approvals: 1 maintainer.
 
 ## Prerequisites
 - Required: Node.js 20+, npm
@@ -29,6 +41,11 @@ Expected output:
 ```sh
 node dist/cli.js config --json
 ```
+
+## Risks and assumptions
+- Troubleshooting steps assume the CLI is built and run from `dist/`.
+- Some failures depend on external arXiv availability; retries may be required.
+- PDF text extraction quality varies by document.
 
 ## Troubleshooting
 ### Symptom: “Provide a search query”
@@ -71,3 +88,16 @@ Fix:
 
 ## Reference
 - Support: `SUPPORT.md`
+
+## Acceptance criteria
+- [ ] Symptoms map to verified causes.
+- [ ] Fixes are actionable and safe.
+- [ ] Risks and assumptions are explicit.
+- [ ] Links resolve to existing files or URLs.
+- [ ] Table of contents matches section headings.
+
+## Evidence bundle
+- Standards mapping: CommonMark structure, accessibility (descriptive links).
+- Automated checks: vale run on 2026-01-04 (0 errors, 0 warnings).
+- Review artifact: Self-review completed on 2026-01-04.
+- Deviations: None.

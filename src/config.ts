@@ -4,6 +4,11 @@ import { join, resolve } from "node:path";
 import { z } from "zod";
 import { CliError } from "./utils/errors.js";
 
+/**
+ * Zod schema for validating arXiv CLI configuration files.
+ *
+ * @internal
+ */
 const configSchema = z.object({
   apiBaseUrl: z.string().url().optional(),
   pdfBaseUrl: z.string().url().optional(),
@@ -20,10 +25,26 @@ const configSchema = z.object({
   debug: z.boolean().optional()
 });
 
+/**
+ * Configuration file schema type.
+ *
+ * @remarks
+ * All properties are optional; unset values will be overridden by
+ * environment variables or CLI flags.
+ *
+ * @public
+ */
 export type FileConfig = z.infer<typeof configSchema>;
 
+/**
+ * Result of loading configuration from files.
+ *
+ * @public
+ */
 export type LoadedConfig = {
+  /** Merged configuration from all loaded files */
   config: FileConfig;
+  /** Paths to files that were successfully loaded */
   configPaths: string[];
 };
 
@@ -60,12 +81,61 @@ const xdgConfigHome = () =>
     ? resolve(process.env.XDG_CONFIG_HOME)
     : join(homedir(), ".config");
 
+/**
+ * Returns the default user config file path.
+ *
+ * @returns Path to `~/.config/arxiv-cli/config.json`
+ *
+ * @remarks
+ * Respects `XDG_CONFIG_HOME` environment variable if set.
+ *
+ * @public
+ */
 export const defaultUserConfigPath = () =>
   join(xdgConfigHome(), "arxiv-cli", "config.json");
 
+/**
+ * Returns the default project config file path.
+ *
+ * @param cwd - Current working directory
+ * @returns Path to `<cwd>/.arxivrc.json`
+ *
+ * @public
+ */
 export const defaultProjectConfigPath = (cwd: string) =>
   resolve(cwd, ".arxivrc.json");
 
+/**
+ * Loads and merges configuration from user and project config files.
+ *
+ * @param cwd - Current working directory for resolving project config path
+ * @param explicitPath - Optional explicit config file path (skips default paths)
+ * @returns Promise resolving to loaded config with source paths
+ * @throws {CliError} If explicit path is required but not found
+ * @throws {CliError} If config file contains invalid JSON or fails schema validation
+ *
+ * @example
+ * ```ts
+ * const { config, configPaths } = await loadConfig(process.cwd());
+ * console.log("Loaded configs from:", configPaths);
+ * ```
+ *
+ * @example
+ * ```ts
+ * // Load from explicit path
+ * const { config } = await loadConfig(process.cwd(), "./my-config.json");
+ * ```
+ *
+ * @remarks
+ * Config precedence (later sources override earlier):
+ * 1. User config: `~/.config/arxiv-cli/config.json`
+ * 2. Project config: `<cwd>/.arxivrc.json`
+ *
+ * When `explicitPath` is provided, only that file is loaded.
+ * Missing optional files are silently skipped.
+ *
+ * @public
+ */
 export const loadConfig = async (cwd: string, explicitPath?: string): Promise<LoadedConfig> => {
   const paths = explicitPath
     ? [resolve(explicitPath)]
@@ -114,6 +184,37 @@ const parseNonNegativeIntEnv = (name: string, value: string | undefined): number
   return parsed;
 };
 
+/**
+ * Reads configuration from environment variables.
+ *
+ * @returns Configuration object with values from environment
+ *
+ * @remarks
+ * Supported environment variables:
+ * - `ARXIV_API_BASE_URL` - API base URL
+ * - `ARXIV_PDF_BASE_URL` - PDF base URL
+ * - `ARXIV_USER_AGENT` - User-Agent header
+ * - `ARXIV_TIMEOUT_MS` - Request timeout (positive integer)
+ * - `ARXIV_RATE_LIMIT_MS` - Rate limit interval (positive integer)
+ * - `ARXIV_MAX_RETRIES` - Max retry attempts (non-negative integer)
+ * - `ARXIV_RETRY_BASE_DELAY_MS` - Retry base delay (non-negative integer)
+ * - `ARXIV_CACHE` - Enable/disable cache (true/false/1/0)
+ * - `ARXIV_CACHE_DIR` - Disk cache directory path
+ * - `ARXIV_CACHE_TTL_MS` - Cache TTL in milliseconds (positive integer)
+ * - `ARXIV_PAGE_SIZE` - Default page size (positive integer)
+ * - `ARXIV_DOWNLOAD_DIR` - Default download directory
+ * - `ARXIV_DEBUG` - Enable debug logging (true/false/1/0)
+ *
+ * @example
+ * ```ts
+ * const env = envConfig();
+ * if (env.debug) {
+ *   console.log("Debug mode enabled");
+ * }
+ * ```
+ *
+ * @public
+ */
 export const envConfig = (): FileConfig => ({
   apiBaseUrl: process.env.ARXIV_API_BASE_URL,
   pdfBaseUrl: process.env.ARXIV_PDF_BASE_URL,

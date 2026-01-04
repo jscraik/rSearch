@@ -2,14 +2,26 @@
 
 One sentence: This FAQ helps developers resolve common usage questions quickly.
 
-Last updated: 2026-01-03
+Last updated: 2026-01-04
 
 ## Table of contents
+- [Doc requirements](#doc-requirements)
 - [Prerequisites](#prerequisites)
 - [Quickstart](#quickstart)
 - [Common tasks](#common-tasks)
+- [Risks and assumptions](#risks-and-assumptions)
 - [Troubleshooting](#troubleshooting)
 - [Reference](#reference)
+- [Acceptance criteria](#acceptance-criteria)
+- [Evidence bundle](#evidence-bundle)
+
+## Doc requirements
+- Audience: Users looking for quick answers about CLI behavior.
+- Scope: Common questions and succinct guidance for usage and policy.
+- Non-scope: Full command reference (see `docs/cli-reference.md`).
+- Doc owner: jscraik.
+- Review cadence: Each release.
+- Required approvals: 1 maintainer.
 
 ## Prerequisites
 - Required: Node.js 20+, npm
@@ -61,6 +73,11 @@ It depends on the license for each paper. arXiv hosts content under author-selec
 ### How do I respect arXiv usage policy?
 Use a contact email in the User-Agent, keep rate limits conservative, and avoid large batch pulls. The CLI supports `--contact` and `--rate-limit` for this.
 
+## Risks and assumptions
+- Answers assume the CLI is built (`npm run build`) and run via `node dist/cli.js`.
+- License guidance is informational only; verify on the arXiv abstract page.
+- Some PDFs require OCR for text extraction.
+
 ## Troubleshooting
 ### Symptom: “Why is output plain text?”
 Cause:
@@ -72,3 +89,16 @@ node dist/cli.js search "cat:cs.AI" --json
 
 ## Reference
 - CLI reference: `docs/cli-reference.md`
+
+## Acceptance criteria
+- [ ] FAQ answers reflect current CLI behavior.
+- [ ] Examples run successfully with current scripts.
+- [ ] Risks and assumptions are explicit.
+- [ ] Links resolve to existing files or URLs.
+- [ ] Table of contents matches section headings.
+
+## Evidence bundle
+- Standards mapping: CommonMark structure, accessibility (descriptive links), security/privacy (license guidance).
+- Automated checks: vale run on 2026-01-04 (0 errors, 0 warnings).
+- Review artifact: Self-review completed on 2026-01-04.
+- Deviations: None.

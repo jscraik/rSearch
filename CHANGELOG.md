@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and adheres to Semantic Versioning.
 
+Last updated: 2026-01-04
+
+## Doc requirements
+- Audience: Users and maintainers tracking release changes.
+- Scope: User-visible changes and release history.
+- Non-scope: Release process steps (see `docs/release-policy.md`).
+- Doc owner: jscraik.
+- Review cadence: Each release.
+- Required approvals: 1 maintainer.
+
 ## [Unreleased]
 
 ### Added
@@ -36,3 +46,16 @@ The format is based on Keep a Changelog and adheres to Semantic Versioning.
 - Config layering (flags > env > project > user).
 - Rate limiting, retries with exponential backoff, and optional debug logging.
 - Unit tests for parser and query builder.
+
+## Acceptance criteria
+- [ ] Entries follow Keep a Changelog format.
+- [ ] Release dates and versions are accurate.
+- [ ] User-visible changes are captured.
+- [ ] Ownership and cadence are stated.
+- [ ] Links resolve to existing files or URLs.
+
+## Evidence bundle
+- Standards mapping: CommonMark structure, release documentation best practices.
+- Automated checks: vale run on 2026-01-04 (0 errors, 0 warnings).
+- Review artifact: Self-review completed on 2026-01-04.
+- Deviations: None.

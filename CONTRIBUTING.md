@@ -2,14 +2,26 @@
 
 One sentence: This guide explains how developers can propose changes safely and consistently.
 
-Last updated: 2026-01-03
+Last updated: 2026-01-04
 
 ## Table of contents
+- [Doc requirements](#doc-requirements)
 - [Prerequisites](#prerequisites)
 - [Quickstart](#quickstart)
 - [Common tasks](#common-tasks)
+- [Risks and assumptions](#risks-and-assumptions)
 - [Troubleshooting](#troubleshooting)
 - [Reference](#reference)
+- [Acceptance criteria](#acceptance-criteria)
+- [Evidence bundle](#evidence-bundle)
+
+## Doc requirements
+- Audience: Contributors proposing changes via PRs.
+- Scope: Contribution workflow, verification steps, and code style expectations.
+- Non-scope: Release process and governance (see `docs/release-policy.md`, `GOVERNANCE.md`).
+- Doc owner: jscraik.
+- Review cadence: Each release.
+- Required approvals: 1 maintainer.
 
 ## Prerequisites
 - Required: Node.js 20+, npm, GitHub account
@@ -71,6 +83,11 @@ git push origin my-change
 - Verify:
   - Docs match the CLI behavior.
 
+## Risks and assumptions
+- Assumes contributors can run Node.js 20+ locally.
+- Assumes `npm audit` is used for dependency hygiene; failures may require coordinated upgrades.
+- PR-only workflow may slow urgent fixes; use issues to flag urgency.
+
 ## Troubleshooting
 ### Symptom: “tests failing after changes”
 Cause:
@@ -91,3 +108,16 @@ Fix:
 - PRs are accepted via fork + pull request.
 - Use clear commit messages and include tests for behavior changes.
 - Support: GitHub Issues (see `SUPPORT.md`).
+
+## Acceptance criteria
+- [ ] Contribution steps match current scripts and tooling.
+- [ ] Verification commands exist in `package.json`.
+- [ ] Code style guidance reflects current codebase.
+- [ ] Risks and assumptions are explicit.
+- [ ] Links resolve to existing files or URLs.
+
+## Evidence bundle
+- Standards mapping: CommonMark structure, accessibility (descriptive links), security/privacy (audit guidance).
+- Automated checks: vale run on 2026-01-04 (0 errors, 0 warnings).
+- Review artifact: Self-review completed on 2026-01-04.
+- Deviations: None.
