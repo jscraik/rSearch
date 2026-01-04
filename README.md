@@ -139,10 +139,12 @@ Fix:
   - `search`, `fetch`, `download`, `urls`, `categories`, `config`, `help`
 - Constraints:
   - Default API delay: 3s
+  - Retry defaults: max-retries=3, retry-base-delay=500ms (`--no-retry` to disable)
   - `page-size` <= 2000
   - `max-results` <= 30000
 - Output schema:
   - `schemas/cli-output.schema.json`
+  - `schemas/cli-error.schema.json`
 - License use:
   - arXiv content is licensed by the authors. The CLI may expose a license URL when provided, but it does not grant rights. Always verify permitted use on the arXiv abstract page.
 - Usage policy:

@@ -68,9 +68,9 @@ ARXIV_DOWNLOAD_DIR=./papers node dist/cli.js download 2002.00762
 ## Troubleshooting
 ### Symptom: “Config not applied”
 Cause:
-- Wrong file path or invalid JSON.
+- Wrong file path or invalid JSON/schema.
 Fix:
-- Check `node dist/cli.js config --json` for loaded paths.
+- Check `node dist/cli.js config --json` for loaded paths and fix any reported validation errors.
 
 ## Reference
 ### Precedence
@@ -84,13 +84,15 @@ Flags > Environment > Project config > User config
 - `ARXIV_API_BASE_URL`
 - `ARXIV_PDF_BASE_URL`
 - `ARXIV_USER_AGENT`
-- `ARXIV_TIMEOUT_MS`
-- `ARXIV_RATE_LIMIT_MS`
+- `ARXIV_TIMEOUT_MS` (positive integer)
+- `ARXIV_RATE_LIMIT_MS` (positive integer)
+- `ARXIV_MAX_RETRIES` (non-negative integer)
+- `ARXIV_RETRY_BASE_DELAY_MS` (non-negative integer)
 - `ARXIV_CACHE_DIR`
-- `ARXIV_CACHE_TTL_MS`
-- `ARXIV_PAGE_SIZE`
+- `ARXIV_CACHE_TTL_MS` (positive integer)
+- `ARXIV_PAGE_SIZE` (positive integer)
 - `ARXIV_DOWNLOAD_DIR`
 - `ARXIV_CONTACT_EMAIL`
-- `ARXIV_CACHE`
-- `ARXIV_DEBUG`
+- `ARXIV_CACHE` (true/false)
+- `ARXIV_DEBUG` (true/false)
 - `NO_COLOR`

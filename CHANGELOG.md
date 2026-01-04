@@ -6,6 +6,20 @@ The format is based on Keep a Changelog and adheres to Semantic Versioning.
 
 ## [Unreleased]
 
+### Added
+- JSON error envelope schema (`schemas/cli-error.schema.json`) and documented error output example.
+- CLI tests covering help output, JSON error envelopes, `--no-input`, numeric validation, and `--no-retry`.
+- Retry tuning flags: `--max-retries`, `--retry-base-delay`, and `--no-retry`.
+
+### Changed
+- `--no-input` now blocks stdin reads with explicit usage errors.
+- Output modes (`--json`, `--plain`, `--quiet`) are mutually exclusive and validated in CLI.
+- Config parsing now reports invalid JSON/schema or missing explicit config path.
+
+### Fixed
+- `download --query` no longer attempts stdin ID resolution before running the query.
+- Comma-separated IDs are accepted consistently across commands.
+
 ## [0.1.0] - 2026-01-03
 
 ### Added

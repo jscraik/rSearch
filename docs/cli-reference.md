@@ -87,13 +87,16 @@ node dist/cli.js help
 ## Reference
 ### Global flags
 - `--json` / `--plain`
-- `--quiet` / `--verbose` / `--debug`
+- `-q, --quiet` / `-v, --verbose` / `--debug`
+- `-V, --version`
 - `--color=auto|always|never` / `--no-color`
+- `--no-input` (disable stdin prompts/reads)
 - `--config <path>`
 - `--api-base-url <url>`
 - `--pdf-base-url <url>`
 - `--user-agent <ua>` / `--contact <email>`
 - `--timeout <ms>` / `--rate-limit <ms>`
+- `--max-retries <n>` / `--retry` / `--no-retry` / `--retry-base-delay <ms>`
 - `--cache-dir <path>` / `--cache-ttl <ms>`
 - `--page-size <n>` / `--no-cache`
 - `--require-license` (supported by `search`, `fetch`, `urls`, `download`)
@@ -102,6 +105,36 @@ node dist/cli.js help
 - Entries include `license` and `licenseUrl` when present in arXiv metadata.
 - When `--require-license` is used, JSON output includes `missingLicenseIds` if any records were filtered.
 - JSON output follows `schemas/cli-output.schema.json`.
+- On errors with `--json`, output uses `schema: arxiv.error.v1` and includes `data.error.code` plus `errors: ["E_*"]`.
+- Error schema: `schemas/cli-error.schema.json`.
+
+Example error output (JSON):
+```json
+{
+  "schema": "arxiv.error.v1",
+  "meta": {
+    "tool": "arxiv",
+    "version": "0.1.0",
+    "timestamp": "2026-01-04T00:00:00.000Z"
+  },
+  "summary": "Provide a search query.",
+  "status": "error",
+  "data": {
+    "error": {
+      "code": "E_USAGE",
+      "message": "Provide a search query."
+    },
+    "exitCode": 2
+  },
+  "errors": [
+    "E_USAGE"
+  ]
+}
+```
+
+### Retry behavior
+- Defaults: `max-retries=3`, `retry-base-delay=500` (ms), with exponential backoff and jitter.
+- Use `--no-retry` for strict single-attempt behavior.
 
 ### Exit codes
 - `0`: success

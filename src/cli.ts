@@ -5,6 +5,7 @@ import { ArxivClient } from "./arxiv/client.js";
 import type { ArxivSearchOptions } from "./arxiv/types.js";
 import type { ArxivEntry } from "./arxiv/types.js";
 import type { TaxonomyCategory, TaxonomyResult } from "./arxiv/taxonomy.js";
+import { MAX_PAGE_SIZE, MAX_TOTAL_RESULTS } from "./arxiv/query.js";
 import { envConfig, loadConfig } from "./config.js";
 import { readLines, readStdin } from "./utils/io.js";
 import {
@@ -21,6 +22,24 @@ import { extractPdfText } from "./utils/pdf.js";
 import { filterByLicense, hasLicenseMetadata } from "./arxiv/license.js";
 import { access, mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
+
+const coercePositiveInt = (label: string) => (value: unknown): number | undefined => {
+  if (value === undefined) return undefined;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed <= 0) {
+    throw new CliError(`Invalid ${label} (expected positive integer): ${value}`, 2, "E_VALIDATION");
+  }
+  return parsed;
+};
+
+const coerceNonNegativeInt = (label: string) => (value: unknown): number | undefined => {
+  if (value === undefined) return undefined;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed < 0) {
+    throw new CliError(`Invalid ${label} (expected non-negative integer): ${value}`, 2, "E_VALIDATION");
+  }
+  return parsed;
+};
 
 const cli = yargs(hideBin(process.argv))
   .scriptName("arxiv")
@@ -41,38 +60,92 @@ const cli = yargs(hideBin(process.argv))
     describe: "Colorize output"
   })
   .option("no-color", { type: "boolean", default: false, describe: "Disable ANSI color output" })
-  .option("no-input", { type: "boolean", default: false, describe: "Disable prompts" })
+  .option("input", {
+    type: "boolean",
+    default: true,
+    describe: "Enable stdin prompts (use --no-input to disable)"
+  })
   .option("config", { type: "string", describe: "Path to config file" })
   .option("api-base-url", { type: "string", describe: "Override arXiv API base URL" })
   .option("pdf-base-url", { type: "string", describe: "Override arXiv PDF base URL" })
   .option("user-agent", { type: "string", describe: "Override User-Agent header" })
   .option("contact", { type: "string", describe: "Contact email to include in User-Agent" })
-  .option("timeout", { type: "number", describe: "HTTP timeout in ms" })
-  .option("rate-limit", { type: "number", describe: "Minimum ms between API requests" })
+  .option("timeout", {
+    type: "number",
+    describe: "HTTP timeout in ms"
+  })
+  .option("rate-limit", {
+    type: "number",
+    describe: "Minimum ms between API requests"
+  })
+  .option("max-retries", {
+    type: "number",
+    describe: "Max retry attempts for transient failures"
+  })
+  .option("retry", {
+    type: "boolean",
+    default: true,
+    describe: "Enable retries for transient failures (use --no-retry to disable)"
+  })
+  .option("retry-base-delay", {
+    type: "number",
+    describe: "Base delay in ms for retry backoff"
+  })
   .option("cache-dir", { type: "string", describe: "Path for on-disk HTTP cache" })
-  .option("cache-ttl", { type: "number", describe: "TTL in ms for on-disk cache entries" })
-  .option("page-size", { type: "number", describe: "Default page size for API calls" })
-  .option("no-cache", { type: "boolean", default: false, describe: "Disable in-memory cache" })
+  .option("cache-ttl", {
+    type: "number",
+    describe: "TTL in ms for on-disk cache entries"
+  })
+  .option("page-size", {
+    type: "number",
+    describe: "Default page size for API calls"
+  })
+  .option("no-cache", { type: "boolean", default: false, describe: "Disable caching" })
   .version(VERSION)
   .alias("h", "help")
+  .alias("q", "quiet")
+  .alias("v", "verbose")
+  .alias("V", "version")
   .help()
   .showHelpOnFail(true)
+  .check((args) => {
+    const outputModes = [args.json, args.plain, args.quiet].filter(Boolean).length;
+    if (outputModes > 1) {
+      throw new CliError("Choose only one output mode: --json, --plain, or --quiet.", 2, "E_USAGE");
+    }
+
+    if (args.retry === false && typeof args.maxRetries === "number") {
+      throw new CliError("Choose either --no-retry or --max-retries.", 2, "E_USAGE");
+    }
+
+    const colorFlagSet = process.argv.some(
+      (arg) => arg === "--color" || arg.startsWith("--color=")
+    );
+    if (args.noColor && colorFlagSet) {
+      throw new CliError("Choose either --color or --no-color.", 2, "E_USAGE");
+    }
+
+    return true;
+  })
   .fail((msg, err, yargsInstance) => {
+    const parsedArgs = (yargsInstance as any)?.parsed?.argv;
+    const jsonRequested = isJsonRequested(parsedArgs);
     if (err instanceof CliError) {
-      if (err.exitCode === 2) {
+      if (err.exitCode === 2 && !jsonRequested) {
         yargsInstance.showHelp();
       }
-      process.stderr.write(`Error: ${err.message}\n`);
-      process.exit(err.exitCode);
+      emitError(err, jsonRequested);
+      return;
     }
     if (msg) {
-      yargsInstance.showHelp();
-      process.stderr.write(`Error: ${msg}\n`);
-      process.exit(2);
+      if (!jsonRequested) {
+        yargsInstance.showHelp();
+      }
+      emitError(new CliError(msg, 2, "E_USAGE"), jsonRequested);
+      return;
     }
     if (err) {
-      process.stderr.write(`Error: ${err.message}\n`);
-      process.exit(1);
+      emitError(err, jsonRequested);
     }
   })
   .command(
@@ -101,11 +174,12 @@ const cli = yargs(hideBin(process.argv))
           describe: "Sort order"
         }),
     async (args) => {
-      const query = await resolveQuery(args.query);
+      const query = await resolveQuery(args.query, args.input === false);
       if (!query) {
         throw new CliError("Provide a search query.", 2);
       }
 
+      validatePagingArgs(args);
       const { client } = await createClientContext(args);
       const result = await client.search({
         searchQuery: query,
@@ -155,11 +229,12 @@ const cli = yargs(hideBin(process.argv))
         .option("max-results", { type: "number", describe: "Max results to return" })
         .option("page-size", { type: "number", describe: "API page size (<=2000)" }),
     async (args) => {
-      const ids = await resolveIds(args.ids);
+      const ids = await resolveIds(args.ids, args.input === false);
       if (ids.length === 0) {
         throw new CliError("Provide one or more arXiv IDs.", 2);
       }
 
+      validatePagingArgs(args);
       const { client } = await createClientContext(args);
       const result = await client.fetchByIds(ids, {
         start: args.start,
@@ -216,7 +291,8 @@ const cli = yargs(hideBin(process.argv))
     async (args) => {
       const { client, defaultDownloadDir } = await createClientContext(args);
       const outputDir = args.outDir ?? defaultDownloadDir ?? process.cwd();
-      let ids = await resolveIds(args.ids);
+      let ids = args.query ? [] : await resolveIds(args.ids, args.input === false);
+      validatePagingArgs(args);
 
       if (args.query) {
         const result = await client.search({
@@ -356,14 +432,15 @@ const cli = yargs(hideBin(process.argv))
         }),
     async (args) => {
       const hasIdsArg = Array.isArray(args.ids) && args.ids.length > 0;
-      const ids = hasIdsArg ? await resolveIds(args.ids) : [];
+      const ids = hasIdsArg ? await resolveIds(args.ids, args.input === false) : [];
       const hasIds = ids.length > 0;
-      const query = hasIds ? "" : await resolveQuery(args.query);
+      const query = hasIds ? "" : await resolveQuery(args.query, args.input === false);
 
       if (!hasIds && !query) {
         throw new CliError("Provide a search query or IDs via --ids.", 2);
       }
 
+      validatePagingArgs(args);
       const { client } = await createClientContext(args);
       const result = hasIds
         ? await client.fetchByIds(ids, {
@@ -529,26 +606,52 @@ const cli = yargs(hideBin(process.argv))
   .demandCommand(1, "Provide a command. Use --help for options.")
   .strict();
 
-const resolveIds = async (ids: string[] | undefined): Promise<string[]> => {
-  const list = (ids ?? []).filter(Boolean);
+const splitIdTokens = (values: string[]): string[] =>
+  values
+    .flatMap((value) => value.split(","))
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+const resolveIds = async (ids: string[] | undefined, noInput?: boolean): Promise<string[]> => {
+  const list = splitIdTokens((ids ?? []).filter(Boolean));
   if (list.length > 0) {
     return list;
   }
-  if (process.stdin.isTTY) {
-    throw new CliError("Provide arXiv IDs or pipe them via stdin.", 2);
+  if (noInput) {
+    throw new CliError("Provide arXiv IDs; stdin disabled by --no-input.", 2, "E_USAGE");
   }
-  return await readLines();
+  if (process.stdin.isTTY) {
+    throw new CliError("Provide arXiv IDs or pipe them via stdin.", 2, "E_USAGE");
+  }
+  const lines = await readLines();
+  return splitIdTokens(lines);
 };
 
-const resolveQuery = async (query: string | undefined): Promise<string> => {
+const resolveQuery = async (query: string | undefined, noInput?: boolean): Promise<string> => {
   if (!query || query === "-") {
+    if (noInput) {
+      throw new CliError("Provide a query string; stdin disabled by --no-input.", 2, "E_USAGE");
+    }
     if (process.stdin.isTTY) {
-      throw new CliError("Provide a query string or pipe it via stdin.", 2);
+      throw new CliError("Provide a query string or pipe it via stdin.", 2, "E_USAGE");
     }
     const input = await readStdin();
     return input.trim();
   }
   return query;
+};
+
+const validatePagingArgs = (args: { pageSize?: number; maxResults?: number; start?: number }) => {
+  const pageSize = coercePositiveInt("page-size")(args.pageSize);
+  const maxResults = coercePositiveInt("max-results")(args.maxResults);
+  coerceNonNegativeInt("start")(args.start);
+
+  if (typeof pageSize === "number" && pageSize > MAX_PAGE_SIZE) {
+    throw new CliError(`page-size cannot exceed ${MAX_PAGE_SIZE}.`, 2, "E_VALIDATION");
+  }
+  if (typeof maxResults === "number" && maxResults > MAX_TOTAL_RESULTS) {
+    throw new CliError(`max-results cannot exceed ${MAX_TOTAL_RESULTS}.`, 2, "E_VALIDATION");
+  }
 };
 
 const loadTaxonomy = async (args: any): Promise<TaxonomyResult> => {
@@ -747,12 +850,14 @@ const resolveFlagConfig = (args: any) => ({
   apiBaseUrl: args.apiBaseUrl,
   pdfBaseUrl: args.pdfBaseUrl,
   userAgent: args.userAgent,
-  timeoutMs: args.timeout,
-  minIntervalMs: args.rateLimit,
+  timeoutMs: coercePositiveInt("timeout")(args.timeout),
+  minIntervalMs: coercePositiveInt("rate-limit")(args.rateLimit),
+  maxRetries: args.retry === false ? 0 : coerceNonNegativeInt("max-retries")(args.maxRetries),
+  retryBaseDelayMs: coerceNonNegativeInt("retry-base-delay")(args.retryBaseDelay),
   cache: args.noCache ? false : undefined,
   cacheDir: args.cacheDir,
-  cacheTtlMs: args.cacheTtl,
-  pageSize: args.pageSize,
+  cacheTtlMs: coercePositiveInt("cache-ttl")(args.cacheTtl),
+  pageSize: coercePositiveInt("page-size")(args.pageSize),
   debug: args.debug ? true : undefined,
   defaultDownloadDir: args.outDir
 });
@@ -775,6 +880,8 @@ const createClientContext = async (args: any) => {
   if (merged.pdfBaseUrl) clientConfig.pdfBaseUrl = merged.pdfBaseUrl;
   if (typeof merged.timeoutMs === "number") clientConfig.timeoutMs = merged.timeoutMs;
   if (typeof merged.minIntervalMs === "number") clientConfig.minIntervalMs = merged.minIntervalMs;
+  if (typeof merged.maxRetries === "number") clientConfig.maxRetries = merged.maxRetries;
+  if (typeof merged.retryBaseDelayMs === "number") clientConfig.retryBaseDelayMs = merged.retryBaseDelayMs;
   if (typeof merged.cache === "boolean") clientConfig.cache = merged.cache;
   if (typeof merged.cacheDir === "string") clientConfig.cacheDir = merged.cacheDir;
   if (typeof merged.cacheTtlMs === "number") clientConfig.cacheTtlMs = merged.cacheTtlMs;
@@ -860,6 +967,59 @@ const resolveColorMode = (args: any): "auto" | "always" | "never" => {
   return "auto";
 };
 
+const isJsonRequested = (args?: any): boolean => {
+  if (args && typeof args === "object" && "json" in args && args.json === true) {
+    return true;
+  }
+  return process.argv.includes("--json");
+};
+
+const errorCodeForExitCode = (exitCode: number): string => {
+  switch (exitCode) {
+    case 2:
+      return "E_USAGE";
+    case 3:
+      return "E_POLICY";
+    case 4:
+      return "E_PARTIAL";
+    default:
+      return "E_INTERNAL";
+  }
+};
+
+const resolveErrorCode = (error: unknown, exitCode: number): string => {
+  if (error instanceof CliError && error.code) {
+    return error.code;
+  }
+  return errorCodeForExitCode(exitCode);
+};
+
+const emitJsonError = (message: string, exitCode: number, code: string) => {
+  const envelope = createEnvelope(
+    "arxiv.error.v1",
+    { error: { code, message }, exitCode },
+    message,
+    "error",
+    [code]
+  );
+  process.stdout.write(JSON.stringify(envelope, null, 2));
+  process.exit(exitCode);
+};
+
+const emitError = (error: unknown, jsonRequested: boolean) => {
+  const message = error instanceof CliError ? error.message : error instanceof Error ? error.message : String(error);
+  const exitCode = error instanceof CliError ? error.exitCode : 1;
+  const code = resolveErrorCode(error, exitCode);
+
+  if (jsonRequested) {
+    emitJsonError(message, exitCode, code);
+    return;
+  }
+
+  process.stderr.write(`Error: ${message}\n`);
+  process.exit(exitCode);
+};
+
 process.on("unhandledRejection", (error) => {
   handleFatal(error);
 });
@@ -869,10 +1029,8 @@ process.on("uncaughtException", (error) => {
 });
 
 const handleFatal = (error: unknown) => {
-  const message = error instanceof CliError ? error.message : error instanceof Error ? error.message : String(error);
-  const exitCode = error instanceof CliError ? error.exitCode : 1;
-  process.stderr.write(`Error: ${message}\n`);
-  process.exit(exitCode);
+  const jsonRequested = isJsonRequested();
+  emitError(error, jsonRequested);
 };
 
 void cli.parseAsync().catch((error) => {
