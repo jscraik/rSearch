@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and adheres to Semantic Versioning.
 
-Last updated: 2026-01-04
+Last updated: 2026-01-05
 
 ## Doc requirements
 - Audience: Users and maintainers tracking release changes.
@@ -15,6 +15,14 @@ Last updated: 2026-01-04
 - Required approvals: 1 maintainer.
 
 ## [Unreleased]
+
+### Added
+
+### Changed
+
+### Fixed
+
+## [0.1.0] - 2026-01-05
 
 ### Added
 - JSON error envelope schema (`schemas/cli-error.schema.json`) and documented error output example.
