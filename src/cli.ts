@@ -42,7 +42,7 @@ const coerceNonNegativeInt = (label: string) => (value: unknown): number | undef
 };
 
 const cli = yargs(hideBin(process.argv))
-  .scriptName("arxiv")
+  .scriptName("rsearch")
   .usage("$0 [global flags] <command> [args]")
   .example("$0 search \"cat:cs.AI\" --max-results 5", "Search arXiv papers")
   .example("$0 fetch 2101.00001 2101.00002", "Fetch metadata by ID")
@@ -869,7 +869,7 @@ const createClientContext = async (args: any) => {
 
   const merged = { ...config, ...env, ...flags };
 
-  const contact = args.contact ?? process.env.ARXIV_CONTACT_EMAIL;
+  const contact = args.contact ?? process.env.RSEARCH_CONTACT_EMAIL;
   const userAgent = resolveUserAgent(merged.userAgent, contact);
 
   const clientConfig: Record<string, unknown> = {
@@ -896,9 +896,9 @@ const createClientContext = async (args: any) => {
 
 const resolveUserAgent = (userAgent: string | undefined, contact?: string) => {
   if (userAgent) return userAgent;
-  if (!contact) return `arxiv-cli/${VERSION}`;
+  if (!contact) return `rsearch/${VERSION}`;
   const contactValue = contact.includes("@") ? `mailto:${contact}` : contact;
-  return `arxiv-cli/${VERSION} (${contactValue})`;
+  return `rsearch/${VERSION} (${contactValue})`;
 };
 
 const outputResult = async ({

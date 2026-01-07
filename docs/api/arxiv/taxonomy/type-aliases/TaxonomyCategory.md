@@ -1,14 +1,14 @@
-[**arxiv-cli**](../../../README.md)
+[**rSearch**](../../../README.md)
 
 ***
 
-[arxiv-cli](../../../README.md) / [arxiv/taxonomy](../README.md) / TaxonomyCategory
+[rSearch](../../../README.md) / [arxiv/taxonomy](../README.md) / TaxonomyCategory
 
 # Type Alias: TaxonomyCategory
 
 > **TaxonomyCategory** = `object`
 
-Defined in: [src/arxiv/taxonomy.ts:10](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/taxonomy.ts#L10)
+Defined in: [src/arxiv/taxonomy.ts:10](https://github.com/jscraik/rSearch/blob/main/src/arxiv/taxonomy.ts#L10)
 
 A single arXiv category.
 
@@ -18,7 +18,7 @@ A single arXiv category.
 
 > `optional` **description**: `string`
 
-Defined in: [src/arxiv/taxonomy.ts:16](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/taxonomy.ts#L16)
+Defined in: [src/arxiv/taxonomy.ts:16](https://github.com/jscraik/rSearch/blob/main/src/arxiv/taxonomy.ts#L16)
 
 Optional description of the category
 
@@ -28,7 +28,7 @@ Optional description of the category
 
 > **group**: `string`
 
-Defined in: [src/arxiv/taxonomy.ts:18](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/taxonomy.ts#L18)
+Defined in: [src/arxiv/taxonomy.ts:18](https://github.com/jscraik/rSearch/blob/main/src/arxiv/taxonomy.ts#L18)
 
 Group this category belongs to (e.g., "Computer Science")
 
@@ -38,7 +38,7 @@ Group this category belongs to (e.g., "Computer Science")
 
 > **id**: `string`
 
-Defined in: [src/arxiv/taxonomy.ts:12](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/taxonomy.ts#L12)
+Defined in: [src/arxiv/taxonomy.ts:12](https://github.com/jscraik/rSearch/blob/main/src/arxiv/taxonomy.ts#L12)
 
 Category ID (e.g., "cs.AI")
 
@@ -48,6 +48,6 @@ Category ID (e.g., "cs.AI")
 
 > **name**: `string`
 
-Defined in: [src/arxiv/taxonomy.ts:14](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/taxonomy.ts#L14)
+Defined in: [src/arxiv/taxonomy.ts:14](https://github.com/jscraik/rSearch/blob/main/src/arxiv/taxonomy.ts#L14)
 
 Human-readable category name

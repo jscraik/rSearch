@@ -1,14 +1,14 @@
-[**arxiv-cli**](../../../README.md)
+[**rSearch**](../../../README.md)
 
 ***
 
-[arxiv-cli](../../../README.md) / [arxiv/types](../README.md) / ArxivSearchResult
+[rSearch](../../../README.md) / [arxiv/types](../README.md) / ArxivSearchResult
 
 # Type Alias: ArxivSearchResult
 
 > **ArxivSearchResult** = `object`
 
-Defined in: [src/arxiv/types.ts:62](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/types.ts#L62)
+Defined in: [src/arxiv/types.ts:62](https://github.com/jscraik/rSearch/blob/main/src/arxiv/types.ts#L62)
 
 Complete search result from the arXiv API.
 
@@ -18,7 +18,7 @@ Complete search result from the arXiv API.
 
 > **entries**: [`ArxivEntry`](ArxivEntry.md)[]
 
-Defined in: [src/arxiv/types.ts:72](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/types.ts#L72)
+Defined in: [src/arxiv/types.ts:72](https://github.com/jscraik/rSearch/blob/main/src/arxiv/types.ts#L72)
 
 Array of paper entries
 
@@ -28,7 +28,7 @@ Array of paper entries
 
 > **itemsPerPage**: `number`
 
-Defined in: [src/arxiv/types.ts:70](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/types.ts#L70)
+Defined in: [src/arxiv/types.ts:70](https://github.com/jscraik/rSearch/blob/main/src/arxiv/types.ts#L70)
 
 Number of items per page
 
@@ -38,7 +38,7 @@ Number of items per page
 
 > **query**: `string`
 
-Defined in: [src/arxiv/types.ts:64](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/types.ts#L64)
+Defined in: [src/arxiv/types.ts:64](https://github.com/jscraik/rSearch/blob/main/src/arxiv/types.ts#L64)
 
 The search query that produced these results
 
@@ -48,7 +48,7 @@ The search query that produced these results
 
 > **startIndex**: `number`
 
-Defined in: [src/arxiv/types.ts:68](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/types.ts#L68)
+Defined in: [src/arxiv/types.ts:68](https://github.com/jscraik/rSearch/blob/main/src/arxiv/types.ts#L68)
 
 Starting index of this page
 
@@ -58,6 +58,6 @@ Starting index of this page
 
 > **totalResults**: `number`
 
-Defined in: [src/arxiv/types.ts:66](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/types.ts#L66)
+Defined in: [src/arxiv/types.ts:66](https://github.com/jscraik/rSearch/blob/main/src/arxiv/types.ts#L66)
 
 Total number of matching papers on arXiv

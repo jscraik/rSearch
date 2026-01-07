@@ -1,6 +1,6 @@
 # ADR-001: CLI Architecture and API Access
 
-Last updated: 2026-01-04
+Last updated: 2026-01-07
 
 ## Doc requirements
 - Audience: Maintainers and contributors reviewing architectural decisions.
@@ -44,6 +44,6 @@ Implement a Node/TypeScript CLI with:
 
 ## Evidence bundle
 - Standards mapping: CommonMark structure, ADR best practices.
-- Automated checks: vale run on 2026-01-04 (0 errors, 0 warnings).
-- Review artifact: Self-review completed on 2026-01-04.
+- Automated checks: vale run on 2026-01-07 (0 errors, 0 warnings).
+- Review artifact: Self-review completed on 2026-01-07.
 - Deviations: None.

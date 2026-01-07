@@ -1,8 +1,8 @@
-[**arxiv-cli**](../../README.md)
+[**rSearch**](../../README.md)
 
 ***
 
-[arxiv-cli](../../README.md) / arxiv/client
+[rSearch](../../README.md) / arxiv/client
 
 # arxiv/client
 

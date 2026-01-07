@@ -1,8 +1,8 @@
 # Get help through GitHub Issues
 
-One sentence: This guide tells developers how to get support for arXiv-CLI.
+One sentence: This guide tells developers how to get support for rSearch.
 
-Last updated: 2026-01-04
+Last updated: 2026-01-07
 
 ## Table of contents
 - [Doc requirements](#doc-requirements)
@@ -30,7 +30,7 @@ Last updated: 2026-01-04
 ## Quickstart
 ### 1) Search existing issues
 - Check whether the issue already exists:
-  - https://github.com/jscraik/arXiv-CLI/issues
+  - https://github.com/jscraik/rSearch/issues
 
 ### 2) Open a new issue
 - Include:
@@ -76,6 +76,6 @@ Fix:
 
 ## Evidence bundle
 - Standards mapping: CommonMark structure, accessibility (descriptive links), security/privacy guidance for logs.
-- Automated checks: vale run on 2026-01-04 (0 errors, 0 warnings).
-- Review artifact: Self-review completed on 2026-01-04.
+- Automated checks: vale run on 2026-01-07 (0 errors, 0 warnings).
+- Review artifact: Self-review completed on 2026-01-07.
 - Deviations: None.

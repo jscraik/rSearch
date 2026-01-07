@@ -1,14 +1,14 @@
-[**arxiv-cli**](../../../README.md)
+[**rSearch**](../../../README.md)
 
 ***
 
-[arxiv-cli](../../../README.md) / [arxiv/taxonomy](../README.md) / fetchTaxonomy
+[rSearch](../../../README.md) / [arxiv/taxonomy](../README.md) / fetchTaxonomy
 
 # Function: fetchTaxonomy()
 
 > **fetchTaxonomy**(`config`, `options`): `Promise`\<[`TaxonomyResult`](../type-aliases/TaxonomyResult.md)\>
 
-Defined in: [src/arxiv/taxonomy.ts:194](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/taxonomy.ts#L194)
+Defined in: [src/arxiv/taxonomy.ts:194](https://github.com/jscraik/rSearch/blob/main/src/arxiv/taxonomy.ts#L194)
 
 Fetches the arXiv category taxonomy.
 

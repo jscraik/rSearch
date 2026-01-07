@@ -2,7 +2,7 @@
 
 One sentence: This code of conduct defines behavior expectations and enforcement for this repo.
 
-Last updated: 2026-01-04
+Last updated: 2026-01-07
 
 ## Doc requirements
 - Audience: Contributors and community participants.
@@ -42,6 +42,6 @@ This policy applies to all project spaces including issues, pull requests, and d
 
 ## Evidence bundle
 - Standards mapping: CommonMark structure, inclusive language, accessibility (clear headings).
-- Automated checks: vale run on 2026-01-04 (0 errors, 0 warnings).
-- Review artifact: Self-review completed on 2026-01-04.
+- Automated checks: vale run on 2026-01-07 (0 errors, 0 warnings).
+- Review artifact: Self-review completed on 2026-01-07.
 - Deviations: None.

@@ -62,7 +62,7 @@ export type ArxivClientConfig = {
 const defaultConfig: ArxivClientConfig = {
   apiBaseUrl: "https://export.arxiv.org/api/query",
   pdfBaseUrl: "https://arxiv.org/pdf/",
-  userAgent: `arxiv-cli/${VERSION}`,
+  userAgent: `rsearch/${VERSION}`,
   timeoutMs: 20000,
   minIntervalMs: 3000,
   cache: true,

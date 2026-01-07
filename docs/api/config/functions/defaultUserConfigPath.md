@@ -1,14 +1,14 @@
-[**arxiv-cli**](../../README.md)
+[**rSearch**](../../README.md)
 
 ***
 
-[arxiv-cli](../../README.md) / [config](../README.md) / defaultUserConfigPath
+[rSearch](../../README.md) / [config](../README.md) / defaultUserConfigPath
 
 # Function: defaultUserConfigPath()
 
 > **defaultUserConfigPath**(): `string`
 
-Defined in: [src/config.ts:94](https://github.com/jscraik/arXiv-CLI/blob/main/src/config.ts#L94)
+Defined in: [src/config.ts:94](https://github.com/jscraik/rSearch/blob/main/src/config.ts#L94)
 
 Returns the default user config file path.
 
@@ -16,7 +16,7 @@ Returns the default user config file path.
 
 `string`
 
-Path to `~/.config/arxiv-cli/config.json`
+Path to `~/.config/rsearch/config.json`
 
 ## Remarks
 

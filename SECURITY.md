@@ -2,7 +2,7 @@
 
 One sentence: This policy describes supported versions and how to report vulnerabilities.
 
-Last updated: 2026-01-04
+Last updated: 2026-01-07
 
 ## Doc requirements
 - Audience: Security researchers, users, and maintainers.
@@ -59,6 +59,6 @@ The repo uses automated security checks on pull requests and scheduled runs:
 
 ## Evidence bundle
 - Standards mapping: CommonMark structure, security/privacy guidance, accessibility (clear headings).
-- Automated checks: vale run on 2026-01-04 (0 errors, 0 warnings).
-- Review artifact: Self-review completed on 2026-01-04.
+- Automated checks: vale run on 2026-01-07 (0 errors, 0 warnings).
+- Review artifact: Self-review completed on 2026-01-07.
 - Deviations: None.

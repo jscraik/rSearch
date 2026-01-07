@@ -1,8 +1,8 @@
-# Use the arXiv-CLI commands to search, fetch, and download papers
+# Use the rSearch commands to search, fetch, and download papers
 
 One sentence: This reference lists commands, flags, and output formats for developers.
 
-Last updated: 2026-01-04
+Last updated: 2026-01-07
 
 ## Table of contents
 - [Doc requirements](#doc-requirements)
@@ -178,6 +178,6 @@ Example error output (JSON):
 
 ## Evidence bundle
 - Standards mapping: CommonMark structure, accessibility (descriptive links), security/privacy (license guidance).
-- Automated checks: vale run on 2026-01-04 (0 errors, 0 warnings).
-- Review artifact: Self-review completed on 2026-01-04.
+- Automated checks: vale run on 2026-01-07 (0 errors, 0 warnings).
+- Review artifact: Self-review completed on 2026-01-07.
 - Deviations: None.

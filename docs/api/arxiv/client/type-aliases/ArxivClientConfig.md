@@ -1,14 +1,14 @@
-[**arxiv-cli**](../../../README.md)
+[**rSearch**](../../../README.md)
 
 ***
 
-[arxiv-cli](../../../README.md) / [arxiv/client](../README.md) / ArxivClientConfig
+[rSearch](../../../README.md) / [arxiv/client](../README.md) / ArxivClientConfig
 
 # Type Alias: ArxivClientConfig
 
 > **ArxivClientConfig** = `object`
 
-Defined in: [src/arxiv/client.ts:35](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/client.ts#L35)
+Defined in: [src/arxiv/client.ts:35](https://github.com/jscraik/rSearch/blob/main/src/arxiv/client.ts#L35)
 
 Configuration options for the arXiv API client.
 
@@ -40,7 +40,7 @@ const config: ArxivClientConfig = {
 
 > **apiBaseUrl**: `string`
 
-Defined in: [src/arxiv/client.ts:37](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/client.ts#L37)
+Defined in: [src/arxiv/client.ts:37](https://github.com/jscraik/rSearch/blob/main/src/arxiv/client.ts#L37)
 
 Base URL for the arXiv API query endpoint.
 
@@ -50,7 +50,7 @@ Base URL for the arXiv API query endpoint.
 
 > **cache**: `boolean`
 
-Defined in: [src/arxiv/client.ts:47](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/client.ts#L47)
+Defined in: [src/arxiv/client.ts:47](https://github.com/jscraik/rSearch/blob/main/src/arxiv/client.ts#L47)
 
 Enable in-memory caching of API responses.
 
@@ -60,7 +60,7 @@ Enable in-memory caching of API responses.
 
 > `optional` **cacheDir**: `string`
 
-Defined in: [src/arxiv/client.ts:49](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/client.ts#L49)
+Defined in: [src/arxiv/client.ts:49](https://github.com/jscraik/rSearch/blob/main/src/arxiv/client.ts#L49)
 
 Optional directory for on-disk HTTP cache.
 
@@ -70,7 +70,7 @@ Optional directory for on-disk HTTP cache.
 
 > `optional` **cacheTtlMs**: `number`
 
-Defined in: [src/arxiv/client.ts:51](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/client.ts#L51)
+Defined in: [src/arxiv/client.ts:51](https://github.com/jscraik/rSearch/blob/main/src/arxiv/client.ts#L51)
 
 Optional TTL for on-disk cache entries in milliseconds.
 
@@ -80,7 +80,7 @@ Optional TTL for on-disk cache entries in milliseconds.
 
 > **debug**: `boolean`
 
-Defined in: [src/arxiv/client.ts:59](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/client.ts#L59)
+Defined in: [src/arxiv/client.ts:59](https://github.com/jscraik/rSearch/blob/main/src/arxiv/client.ts#L59)
 
 Enable debug logging to stderr.
 
@@ -90,7 +90,7 @@ Enable debug logging to stderr.
 
 > **maxRetries**: `number`
 
-Defined in: [src/arxiv/client.ts:55](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/client.ts#L55)
+Defined in: [src/arxiv/client.ts:55](https://github.com/jscraik/rSearch/blob/main/src/arxiv/client.ts#L55)
 
 Maximum number of retry attempts for transient failures.
 
@@ -100,7 +100,7 @@ Maximum number of retry attempts for transient failures.
 
 > **minIntervalMs**: `number`
 
-Defined in: [src/arxiv/client.ts:45](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/client.ts#L45)
+Defined in: [src/arxiv/client.ts:45](https://github.com/jscraik/rSearch/blob/main/src/arxiv/client.ts#L45)
 
 Minimum interval between API requests in milliseconds (rate limiting).
 
@@ -110,7 +110,7 @@ Minimum interval between API requests in milliseconds (rate limiting).
 
 > **pageSize**: `number`
 
-Defined in: [src/arxiv/client.ts:53](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/client.ts#L53)
+Defined in: [src/arxiv/client.ts:53](https://github.com/jscraik/rSearch/blob/main/src/arxiv/client.ts#L53)
 
 Default page size for paginated queries.
 
@@ -120,7 +120,7 @@ Default page size for paginated queries.
 
 > **pdfBaseUrl**: `string`
 
-Defined in: [src/arxiv/client.ts:39](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/client.ts#L39)
+Defined in: [src/arxiv/client.ts:39](https://github.com/jscraik/rSearch/blob/main/src/arxiv/client.ts#L39)
 
 Base URL for arXiv PDF downloads.
 
@@ -130,7 +130,7 @@ Base URL for arXiv PDF downloads.
 
 > **retryBaseDelayMs**: `number`
 
-Defined in: [src/arxiv/client.ts:57](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/client.ts#L57)
+Defined in: [src/arxiv/client.ts:57](https://github.com/jscraik/rSearch/blob/main/src/arxiv/client.ts#L57)
 
 Base delay in milliseconds for exponential backoff retries.
 
@@ -140,7 +140,7 @@ Base delay in milliseconds for exponential backoff retries.
 
 > **timeoutMs**: `number`
 
-Defined in: [src/arxiv/client.ts:43](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/client.ts#L43)
+Defined in: [src/arxiv/client.ts:43](https://github.com/jscraik/rSearch/blob/main/src/arxiv/client.ts#L43)
 
 HTTP request timeout in milliseconds.
 
@@ -150,6 +150,6 @@ HTTP request timeout in milliseconds.
 
 > **userAgent**: `string`
 
-Defined in: [src/arxiv/client.ts:41](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/client.ts#L41)
+Defined in: [src/arxiv/client.ts:41](https://github.com/jscraik/rSearch/blob/main/src/arxiv/client.ts#L41)
 
 User-Agent header for API requests.

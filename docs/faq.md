@@ -1,8 +1,8 @@
-# Answer common questions about arXiv-CLI usage
+# Answer common questions about rSearch usage
 
 One sentence: This FAQ helps developers resolve common usage questions quickly.
 
-Last updated: 2026-01-04
+Last updated: 2026-01-07
 
 ## Table of contents
 - [Doc requirements](#doc-requirements)
@@ -54,9 +54,9 @@ node dist/cli.js download 2002.00762 --format json --out-dir ./papers
 ```
 
 ### How do I enable the on-disk cache?
-Use `--cache-dir` or `ARXIV_CACHE_DIR`. Cache is opt-in and can be given a TTL.
+Use `--cache-dir` or `RSEARCH_CACHE_DIR`. Cache is opt-in and can be given a TTL.
 ```sh
-ARXIV_CACHE_DIR=~/.cache/arxiv-cli ARXIV_CACHE_TTL_MS=86400000 node dist/cli.js search "cat:cs.AI"
+RSEARCH_CACHE_DIR=~/.cache/rsearch RSEARCH_CACHE_TTL_MS=86400000 node dist/cli.js search "cat:cs.AI"
 ```
 
 ### How do I filter results by license metadata?
@@ -99,6 +99,6 @@ node dist/cli.js search "cat:cs.AI" --json
 
 ## Evidence bundle
 - Standards mapping: CommonMark structure, accessibility (descriptive links), security/privacy (license guidance).
-- Automated checks: vale run on 2026-01-04 (0 errors, 0 warnings).
-- Review artifact: Self-review completed on 2026-01-04.
+- Automated checks: vale run on 2026-01-07 (0 errors, 0 warnings).
+- Review artifact: Self-review completed on 2026-01-07.
 - Deviations: None.

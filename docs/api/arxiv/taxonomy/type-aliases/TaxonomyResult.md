@@ -1,14 +1,14 @@
-[**arxiv-cli**](../../../README.md)
+[**rSearch**](../../../README.md)
 
 ***
 
-[arxiv-cli](../../../README.md) / [arxiv/taxonomy](../README.md) / TaxonomyResult
+[rSearch](../../../README.md) / [arxiv/taxonomy](../README.md) / TaxonomyResult
 
 # Type Alias: TaxonomyResult
 
 > **TaxonomyResult** = `object`
 
-Defined in: [src/arxiv/taxonomy.ts:38](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/taxonomy.ts#L38)
+Defined in: [src/arxiv/taxonomy.ts:38](https://github.com/jscraik/rSearch/blob/main/src/arxiv/taxonomy.ts#L38)
 
 Complete arXiv taxonomy result.
 
@@ -18,7 +18,7 @@ Complete arXiv taxonomy result.
 
 > **categories**: [`TaxonomyCategory`](TaxonomyCategory.md)[]
 
-Defined in: [src/arxiv/taxonomy.ts:44](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/taxonomy.ts#L44)
+Defined in: [src/arxiv/taxonomy.ts:44](https://github.com/jscraik/rSearch/blob/main/src/arxiv/taxonomy.ts#L44)
 
 Flat list of all categories
 
@@ -28,7 +28,7 @@ Flat list of all categories
 
 > **groups**: [`TaxonomyGroup`](TaxonomyGroup.md)[]
 
-Defined in: [src/arxiv/taxonomy.ts:42](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/taxonomy.ts#L42)
+Defined in: [src/arxiv/taxonomy.ts:42](https://github.com/jscraik/rSearch/blob/main/src/arxiv/taxonomy.ts#L42)
 
 Hierarchical groups
 
@@ -38,6 +38,6 @@ Hierarchical groups
 
 > **sourceUrl**: `string`
 
-Defined in: [src/arxiv/taxonomy.ts:40](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/taxonomy.ts#L40)
+Defined in: [src/arxiv/taxonomy.ts:40](https://github.com/jscraik/rSearch/blob/main/src/arxiv/taxonomy.ts#L40)
 
 URL where the taxonomy was fetched from

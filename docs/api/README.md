@@ -1,8 +1,8 @@
-**arxiv-cli**
+**rSearch**
 
 ***
 
-# arxiv-cli
+# rSearch
 
 ## Modules
 

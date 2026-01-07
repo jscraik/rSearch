@@ -1,14 +1,14 @@
-[**arxiv-cli**](../../../README.md)
+[**rSearch**](../../../README.md)
 
 ***
 
-[arxiv-cli](../../../README.md) / [arxiv/types](../README.md) / ArxivEntry
+[rSearch](../../../README.md) / [arxiv/types](../README.md) / ArxivEntry
 
 # Type Alias: ArxivEntry
 
 > **ArxivEntry** = `object`
 
-Defined in: [src/arxiv/types.ts:22](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/types.ts#L22)
+Defined in: [src/arxiv/types.ts:22](https://github.com/jscraik/rSearch/blob/main/src/arxiv/types.ts#L22)
 
 Complete metadata for an arXiv paper entry.
 
@@ -18,7 +18,7 @@ Complete metadata for an arXiv paper entry.
 
 > `optional` **absUrl**: `string`
 
-Defined in: [src/arxiv/types.ts:48](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/types.ts#L48)
+Defined in: [src/arxiv/types.ts:48](https://github.com/jscraik/rSearch/blob/main/src/arxiv/types.ts#L48)
 
 Direct URL to abstract page
 
@@ -28,7 +28,7 @@ Direct URL to abstract page
 
 > **authors**: `string`[]
 
-Defined in: [src/arxiv/types.ts:34](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/types.ts#L34)
+Defined in: [src/arxiv/types.ts:34](https://github.com/jscraik/rSearch/blob/main/src/arxiv/types.ts#L34)
 
 List of author names
 
@@ -38,7 +38,7 @@ List of author names
 
 > **categories**: `string`[]
 
-Defined in: [src/arxiv/types.ts:36](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/types.ts#L36)
+Defined in: [src/arxiv/types.ts:36](https://github.com/jscraik/rSearch/blob/main/src/arxiv/types.ts#L36)
 
 arXiv category IDs (e.g., ["cs.AI", "cs.LG"])
 
@@ -48,7 +48,7 @@ arXiv category IDs (e.g., ["cs.AI", "cs.LG"])
 
 > `optional` **comment**: `string`
 
-Defined in: [src/arxiv/types.ts:44](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/types.ts#L44)
+Defined in: [src/arxiv/types.ts:44](https://github.com/jscraik/rSearch/blob/main/src/arxiv/types.ts#L44)
 
 Author comments
 
@@ -58,7 +58,7 @@ Author comments
 
 > `optional` **doi**: `string`
 
-Defined in: [src/arxiv/types.ts:42](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/types.ts#L42)
+Defined in: [src/arxiv/types.ts:42](https://github.com/jscraik/rSearch/blob/main/src/arxiv/types.ts#L42)
 
 Digital Object Identifier
 
@@ -68,7 +68,7 @@ Digital Object Identifier
 
 > **id**: `string`
 
-Defined in: [src/arxiv/types.ts:24](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/types.ts#L24)
+Defined in: [src/arxiv/types.ts:24](https://github.com/jscraik/rSearch/blob/main/src/arxiv/types.ts#L24)
 
 arXiv paper ID (e.g., "2301.00001")
 
@@ -78,7 +78,7 @@ arXiv paper ID (e.g., "2301.00001")
 
 > `optional` **journalRef**: `string`
 
-Defined in: [src/arxiv/types.ts:46](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/types.ts#L46)
+Defined in: [src/arxiv/types.ts:46](https://github.com/jscraik/rSearch/blob/main/src/arxiv/types.ts#L46)
 
 Journal reference (if published)
 
@@ -88,7 +88,7 @@ Journal reference (if published)
 
 > `optional` **license**: `string`
 
-Defined in: [src/arxiv/types.ts:52](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/types.ts#L52)
+Defined in: [src/arxiv/types.ts:52](https://github.com/jscraik/rSearch/blob/main/src/arxiv/types.ts#L52)
 
 License name (e.g., "http://arxiv.org/licenses/nonexclusive-distrib/1.0/")
 
@@ -98,7 +98,7 @@ License name (e.g., "http://arxiv.org/licenses/nonexclusive-distrib/1.0/")
 
 > `optional` **licenseUrl**: `string`
 
-Defined in: [src/arxiv/types.ts:54](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/types.ts#L54)
+Defined in: [src/arxiv/types.ts:54](https://github.com/jscraik/rSearch/blob/main/src/arxiv/types.ts#L54)
 
 Full license URL
 
@@ -108,7 +108,7 @@ Full license URL
 
 > **links**: [`ArxivLink`](ArxivLink.md)[]
 
-Defined in: [src/arxiv/types.ts:40](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/types.ts#L40)
+Defined in: [src/arxiv/types.ts:40](https://github.com/jscraik/rSearch/blob/main/src/arxiv/types.ts#L40)
 
 All associated links
 
@@ -118,7 +118,7 @@ All associated links
 
 > `optional` **pdfUrl**: `string`
 
-Defined in: [src/arxiv/types.ts:50](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/types.ts#L50)
+Defined in: [src/arxiv/types.ts:50](https://github.com/jscraik/rSearch/blob/main/src/arxiv/types.ts#L50)
 
 Direct URL to PDF download
 
@@ -128,7 +128,7 @@ Direct URL to PDF download
 
 > `optional` **primaryCategory**: `string`
 
-Defined in: [src/arxiv/types.ts:38](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/types.ts#L38)
+Defined in: [src/arxiv/types.ts:38](https://github.com/jscraik/rSearch/blob/main/src/arxiv/types.ts#L38)
 
 Primary category ID
 
@@ -138,7 +138,7 @@ Primary category ID
 
 > **published**: `string`
 
-Defined in: [src/arxiv/types.ts:30](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/types.ts#L30)
+Defined in: [src/arxiv/types.ts:30](https://github.com/jscraik/rSearch/blob/main/src/arxiv/types.ts#L30)
 
 ISO 8601 publication date
 
@@ -148,7 +148,7 @@ ISO 8601 publication date
 
 > **summary**: `string`
 
-Defined in: [src/arxiv/types.ts:28](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/types.ts#L28)
+Defined in: [src/arxiv/types.ts:28](https://github.com/jscraik/rSearch/blob/main/src/arxiv/types.ts#L28)
 
 Abstract summary
 
@@ -158,7 +158,7 @@ Abstract summary
 
 > **title**: `string`
 
-Defined in: [src/arxiv/types.ts:26](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/types.ts#L26)
+Defined in: [src/arxiv/types.ts:26](https://github.com/jscraik/rSearch/blob/main/src/arxiv/types.ts#L26)
 
 Paper title
 
@@ -168,6 +168,6 @@ Paper title
 
 > **updated**: `string`
 
-Defined in: [src/arxiv/types.ts:32](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/types.ts#L32)
+Defined in: [src/arxiv/types.ts:32](https://github.com/jscraik/rSearch/blob/main/src/arxiv/types.ts#L32)
 
 ISO 8601 last updated date

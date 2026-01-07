@@ -2,7 +2,7 @@
 
 One sentence: This document describes the repo layout and what each folder contains.
 
-Last updated: 2026-01-04
+Last updated: 2026-01-07
 
 ## Doc requirements
 - Audience: Developers navigating the repository.
@@ -51,6 +51,6 @@ Last updated: 2026-01-04
 
 ## Evidence bundle
 - Standards mapping: CommonMark structure, accessibility (clear headings).
-- Automated checks: vale run on 2026-01-04 (0 errors, 0 warnings).
-- Review artifact: Self-review completed on 2026-01-04.
+- Automated checks: vale run on 2026-01-07 (0 errors, 0 warnings).
+- Review artifact: Self-review completed on 2026-01-07.
 - Deviations: None.

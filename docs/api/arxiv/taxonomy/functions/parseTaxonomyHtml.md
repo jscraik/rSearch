@@ -1,14 +1,14 @@
-[**arxiv-cli**](../../../README.md)
+[**rSearch**](../../../README.md)
 
 ***
 
-[arxiv-cli](../../../README.md) / [arxiv/taxonomy](../README.md) / parseTaxonomyHtml
+[rSearch](../../../README.md) / [arxiv/taxonomy](../README.md) / parseTaxonomyHtml
 
 # Function: parseTaxonomyHtml()
 
 > **parseTaxonomyHtml**(`html`, `sourceUrl`): [`TaxonomyResult`](../type-aliases/TaxonomyResult.md)
 
-Defined in: [src/arxiv/taxonomy.ts:106](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/taxonomy.ts#L106)
+Defined in: [src/arxiv/taxonomy.ts:106](https://github.com/jscraik/rSearch/blob/main/src/arxiv/taxonomy.ts#L106)
 
 Parses arXiv taxonomy HTML into structured data.
 

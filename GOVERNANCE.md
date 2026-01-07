@@ -1,8 +1,8 @@
-# Define how decisions are made for arXiv-CLI
+# Define how decisions are made for rSearch
 
 One sentence: This document explains ownership and decision-making for the project.
 
-Last updated: 2026-01-04
+Last updated: 2026-01-07
 
 ## Table of contents
 - [Doc requirements](#doc-requirements)
@@ -82,7 +82,7 @@ Fix:
 - Open an issue and request a maintainer assignment.
 
 ## Reference
-- Repo: https://github.com/jscraik/arXiv-CLI.git
+- Repo: https://github.com/jscraik/rSearch.git
 - Support: `SUPPORT.md`
 
 ## Acceptance criteria
@@ -94,6 +94,6 @@ Fix:
 
 ## Evidence bundle
 - Standards mapping: CommonMark structure, accessibility (descriptive links), governance clarity.
-- Automated checks: vale run on 2026-01-04 (0 errors, 0 warnings).
-- Review artifact: Self-review completed on 2026-01-04.
+- Automated checks: vale run on 2026-01-07 (0 errors, 0 warnings).
+- Review artifact: Self-review completed on 2026-01-07.
 - Deviations: None.

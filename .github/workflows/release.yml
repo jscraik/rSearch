@@ -99,7 +99,7 @@ jobs:
             ## Installation
 
             ```bash
-            npm install -g @brainwav/arxiv-cli@${{ steps.version.outputs.version }}
+            npm install -g @brainwav/rsearch@${{ steps.version.outputs.version }}
             ```
           draft: false
           prerelease: false

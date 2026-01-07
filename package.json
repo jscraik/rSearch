@@ -1,10 +1,10 @@
 {
-  "name": "@brainwav/arxiv-cli",
+  "name": "@brainwav/rsearch",
   "version": "0.1.1",
-  "description": "arXiv CLI",
+  "description": "rSearch CLI for arXiv",
   "type": "module",
   "bin": {
-    "arxiv": "dist/cli.js"
+    "rsearch": "dist/cli.js"
   },
   "exports": {
     ".": "./dist/index.js"
@@ -42,18 +42,19 @@
     "arxiv",
     "cli",
     "mcp",
-    "research"
+    "research",
+    "rsearch"
   ],
   "author": "jscraik",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jscraik/arXiv-CLI.git"
+    "url": "git+https://github.com/jscraik/rSearch.git"
   },
   "bugs": {
-    "url": "https://github.com/jscraik/arXiv-CLI/issues"
+    "url": "https://github.com/jscraik/rSearch/issues"
   },
-  "homepage": "https://github.com/jscraik/arXiv-CLI#readme",
+  "homepage": "https://github.com/jscraik/rSearch#readme",
   "dependencies": {
     "cheerio": "^1.1.2",
     "fast-xml-parser": "^5.3.3",

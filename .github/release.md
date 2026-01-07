@@ -1,6 +1,6 @@
 # Release Process
 
-This document outlines the automated release process for @brainwav/arxiv-cli.
+This document outlines the automated release process for @brainwav/rsearch.
 
 ## Automated Release Workflows
 

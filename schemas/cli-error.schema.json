@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "arxiv-cli error envelope",
+  "title": "rSearch error envelope",
   "type": "object",
   "required": ["schema", "meta", "summary", "status", "data", "errors"],
   "properties": {

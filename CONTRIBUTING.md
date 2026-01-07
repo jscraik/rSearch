@@ -2,7 +2,7 @@
 
 One sentence: This guide explains how developers can propose changes safely and consistently.
 
-Last updated: 2026-01-04
+Last updated: 2026-01-07
 
 ## Table of contents
 - [Doc requirements](#doc-requirements)
@@ -31,8 +31,8 @@ Last updated: 2026-01-04
 ### 1) Fork and clone
 ```sh
 # Fork the repo on GitHub, then:
-git clone https://github.com/<you>/arXiv-CLI.git
-cd arXiv-CLI
+git clone https://github.com/<you>/rSearch.git
+cd rSearch
 ```
 
 ### 2) Install and verify
@@ -118,6 +118,6 @@ Fix:
 
 ## Evidence bundle
 - Standards mapping: CommonMark structure, accessibility (descriptive links), security/privacy (audit guidance).
-- Automated checks: vale run on 2026-01-04 (0 errors, 0 warnings).
-- Review artifact: Self-review completed on 2026-01-04.
+- Automated checks: vale run on 2026-01-07 (0 errors, 0 warnings).
+- Review artifact: Self-review completed on 2026-01-07.
 - Deviations: None.

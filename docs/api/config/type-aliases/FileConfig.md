@@ -1,14 +1,14 @@
-[**arxiv-cli**](../../README.md)
+[**rSearch**](../../README.md)
 
 ***
 
-[arxiv-cli](../../README.md) / [config](../README.md) / FileConfig
+[rSearch](../../README.md) / [config](../README.md) / FileConfig
 
 # Type Alias: FileConfig
 
 > **FileConfig** = `z.infer`\<*typeof* `configSchema`\>
 
-Defined in: [src/config.ts:37](https://github.com/jscraik/arXiv-CLI/blob/main/src/config.ts#L37)
+Defined in: [src/config.ts:37](https://github.com/jscraik/rSearch/blob/main/src/config.ts#L37)
 
 Configuration file schema type.
 

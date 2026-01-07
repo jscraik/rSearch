@@ -1,18 +1,18 @@
 <div align="center">
-  <img src="./brand/arvix-brand-logo.png" alt="arXiv-CLI Logo" width="200" />
+  <img src="./brand/rsearch-brand-logo.png" alt="rSearch Logo" width="200" />
 </div>
 
-# arXiv-CLI helps developers search, fetch, and download arXiv papers from the terminal
+# rSearch helps developers search, fetch, and download arXiv papers from the terminal
 
 [![License](https://img.shields.io/badge/license-MIT-informational.svg)](LICENSE)
-[![npm](https://img.shields.io/npm/v/@brainwav/arxiv-cli)](https://www.npmjs.com/package/@brainwav/arxiv-cli)
-[![CI](https://github.com/jscraik/arXiv-CLI/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jscraik/arXiv-CLI/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/@brainwav/rsearch)](https://www.npmjs.com/package/@brainwav/rsearch)
+[![CI](https://github.com/jscraik/rSearch/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jscraik/rSearch/actions/workflows/ci.yml)
 [![Security Policy](https://img.shields.io/badge/security-policy-informational.svg)](SECURITY.md)
-[![Issues](https://img.shields.io/github/issues/jscraik/arXiv-CLI)](https://github.com/jscraik/arXiv-CLI/issues)
+[![Issues](https://img.shields.io/github/issues/jscraik/rSearch)](https://github.com/jscraik/rSearch/issues)
 
 One sentence: This repo provides a Node/TypeScript CLI for arXiv search, metadata fetch, downloads, category browsing, and URL output.
 
-Last updated: 2026-01-04
+Last updated: 2026-01-07
 
 ## Table of contents
 
@@ -60,6 +60,8 @@ node dist/cli.js search "cat:cs.AI" --max-results 5
 Expected output:
 
 - A list of results with IDs and titles.
+
+> Pro tip: install `@brainwav/rsearch` and you can run `rsearch search "cat:cs.AI" --max-results 5` instead of `node dist/cli.js`.
 
 ## Common tasks
 
@@ -205,7 +207,7 @@ Fix:
 
 ## Reference
 
-- Repo: <https://github.com/jscraik/arXiv-CLI.git>
+- Repo: <https://github.com/jscraik/rSearch.git>
 - Commands:
   - `search`, `fetch`, `download`, `urls`, `categories`, `config`, `help`
 - Constraints:
@@ -247,8 +249,8 @@ Fix:
 
 - Standards mapping: CommonMark structure, accessibility (descriptive links), security/privacy guidance for license usage.
 - Brand compliance: Documentation signature added; assets present in `brand/`.
-- Automated checks: vale run on 2026-01-04 (0 errors, 0 warnings).
-- Review artifact: Self-review completed on 2026-01-04.
+- Automated checks: vale run on 2026-01-07 (0 errors, 0 warnings).
+- Review artifact: Self-review completed on 2026-01-07.
 - Deviations: None.
 
 ---

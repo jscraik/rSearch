@@ -43,7 +43,7 @@ describe("cli", () => {
   });
 
   it("fails when explicit config file is missing", () => {
-    const tempDir = mkdtempSync(resolve(tmpdir(), "arxiv-cli-"));
+    const tempDir = mkdtempSync(resolve(tmpdir(), "rsearch-"));
     const missingPath = resolve(tempDir, "missing-config.json");
     const result = runCli(["config", "--config", missingPath, "--json"]);
 

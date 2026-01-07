@@ -1,12 +1,12 @@
-[**arxiv-cli**](../../../README.md)
+[**rSearch**](../../../README.md)
 
 ***
 
-[arxiv-cli](../../../README.md) / [arxiv/client](../README.md) / ArxivClient
+[rSearch](../../../README.md) / [arxiv/client](../README.md) / ArxivClient
 
 # Class: ArxivClient
 
-Defined in: [src/arxiv/client.ts:97](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/client.ts#L97)
+Defined in: [src/arxiv/client.ts:97](https://github.com/jscraik/rSearch/blob/main/src/arxiv/client.ts#L97)
 
 arXiv API client for searching, fetching metadata, and downloading papers.
 
@@ -33,7 +33,7 @@ console.log(results.entries);
 
 > **new ArxivClient**(`config`): `ArxivClient`
 
-Defined in: [src/arxiv/client.ts:116](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/client.ts#L116)
+Defined in: [src/arxiv/client.ts:116](https://github.com/jscraik/rSearch/blob/main/src/arxiv/client.ts#L116)
 
 Creates a new arXiv API client with optional configuration overrides.
 
@@ -65,7 +65,7 @@ const client = new ArxivClient({
 
 > **download**(`ids`, `outputDir`, `overwrite`): `Promise`\<`object`[]\>
 
-Defined in: [src/arxiv/client.ts:279](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/client.ts#L279)
+Defined in: [src/arxiv/client.ts:279](https://github.com/jscraik/rSearch/blob/main/src/arxiv/client.ts#L279)
 
 Downloads PDF files for the given arXiv IDs to a directory.
 
@@ -123,7 +123,7 @@ Each result has a status:
 
 > **downloadPdfBuffer**(`id`): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
 
-Defined in: [src/arxiv/client.ts:339](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/client.ts#L339)
+Defined in: [src/arxiv/client.ts:339](https://github.com/jscraik/rSearch/blob/main/src/arxiv/client.ts#L339)
 
 Downloads a single arXiv PDF as a byte buffer.
 
@@ -159,7 +159,7 @@ Useful for in-memory PDF processing without writing to disk.
 
 > **fetchByIds**(`ids`, `options`): `Promise`\<[`ArxivSearchResult`](../../types/type-aliases/ArxivSearchResult.md)\>
 
-Defined in: [src/arxiv/client.ts:247](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/client.ts#L247)
+Defined in: [src/arxiv/client.ts:247](https://github.com/jscraik/rSearch/blob/main/src/arxiv/client.ts#L247)
 
 Fetches metadata for specific arXiv paper IDs.
 
@@ -198,7 +198,7 @@ const results = await client.fetchByIds([
 
 > **getConfig**(): [`ArxivClientConfig`](../type-aliases/ArxivClientConfig.md)
 
-Defined in: [src/arxiv/client.ts:126](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/client.ts#L126)
+Defined in: [src/arxiv/client.ts:126](https://github.com/jscraik/rSearch/blob/main/src/arxiv/client.ts#L126)
 
 Returns a copy of the current client configuration.
 
@@ -214,7 +214,7 @@ A shallow copy of the configuration object
 
 > **search**(`options`): `Promise`\<[`ArxivSearchResult`](../../types/type-aliases/ArxivSearchResult.md)\>
 
-Defined in: [src/arxiv/client.ts:162](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/client.ts#L162)
+Defined in: [src/arxiv/client.ts:162](https://github.com/jscraik/rSearch/blob/main/src/arxiv/client.ts#L162)
 
 Searches arXiv with the given options and returns matching entries.
 

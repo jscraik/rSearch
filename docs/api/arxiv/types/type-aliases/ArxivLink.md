@@ -1,14 +1,14 @@
-[**arxiv-cli**](../../../README.md)
+[**rSearch**](../../../README.md)
 
 ***
 
-[arxiv-cli](../../../README.md) / [arxiv/types](../README.md) / ArxivLink
+[rSearch](../../../README.md) / [arxiv/types](../README.md) / ArxivLink
 
 # Type Alias: ArxivLink
 
 > **ArxivLink** = `object`
 
-Defined in: [src/arxiv/types.ts:6](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/types.ts#L6)
+Defined in: [src/arxiv/types.ts:6](https://github.com/jscraik/rSearch/blob/main/src/arxiv/types.ts#L6)
 
 A link associated with an arXiv entry.
 
@@ -18,7 +18,7 @@ A link associated with an arXiv entry.
 
 > **href**: `string`
 
-Defined in: [src/arxiv/types.ts:8](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/types.ts#L8)
+Defined in: [src/arxiv/types.ts:8](https://github.com/jscraik/rSearch/blob/main/src/arxiv/types.ts#L8)
 
 The URL of the link
 
@@ -28,7 +28,7 @@ The URL of the link
 
 > `optional` **rel**: `string`
 
-Defined in: [src/arxiv/types.ts:10](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/types.ts#L10)
+Defined in: [src/arxiv/types.ts:10](https://github.com/jscraik/rSearch/blob/main/src/arxiv/types.ts#L10)
 
 Link relation type (e.g., "license")
 
@@ -38,7 +38,7 @@ Link relation type (e.g., "license")
 
 > `optional` **title**: `string`
 
-Defined in: [src/arxiv/types.ts:14](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/types.ts#L14)
+Defined in: [src/arxiv/types.ts:14](https://github.com/jscraik/rSearch/blob/main/src/arxiv/types.ts#L14)
 
 Human-readable title of the link
 
@@ -48,6 +48,6 @@ Human-readable title of the link
 
 > `optional` **type**: `string`
 
-Defined in: [src/arxiv/types.ts:12](https://github.com/jscraik/arXiv-CLI/blob/main/src/arxiv/types.ts#L12)
+Defined in: [src/arxiv/types.ts:12](https://github.com/jscraik/rSearch/blob/main/src/arxiv/types.ts#L12)
 
 MIME type of the linked resource

@@ -1,8 +1,8 @@
-# Find the right arXiv-CLI docs fast
+# Find the right rSearch docs fast
 
 One sentence: This index points developers to the right doc for each task.
 
-Last updated: 2026-01-04
+Last updated: 2026-01-07
 
 ## Table of contents
 - [Doc requirements](#doc-requirements)
@@ -74,7 +74,7 @@ Fix:
 - Use this index and go to the matching section.
 
 ## Reference
-- Repo: https://github.com/jscraik/arXiv-CLI.git
+- Repo: https://github.com/jscraik/rSearch.git
 - Support: `SUPPORT.md`
 - Contributing: `CONTRIBUTING.md`
 - Governance: `GOVERNANCE.md`
@@ -91,6 +91,6 @@ Fix:
 
 ## Evidence bundle
 - Standards mapping: CommonMark structure, accessibility (descriptive links).
-- Automated checks: vale run on 2026-01-04 (0 errors, 0 warnings).
-- Review artifact: Self-review completed on 2026-01-04.
+- Automated checks: vale run on 2026-01-07 (0 errors, 0 warnings).
+- Review artifact: Self-review completed on 2026-01-07.
 - Deviations: None.

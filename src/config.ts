@@ -5,7 +5,7 @@ import { z } from "zod";
 import { CliError } from "./utils/errors.js";
 
 /**
- * Zod schema for validating arXiv CLI configuration files.
+ * Zod schema for validating rSearch configuration files.
  *
  * @internal
  */
@@ -84,7 +84,7 @@ const xdgConfigHome = () =>
 /**
  * Returns the default user config file path.
  *
- * @returns Path to `~/.config/arxiv-cli/config.json`
+ * @returns Path to `~/.config/rsearch/config.json`
  *
  * @remarks
  * Respects `XDG_CONFIG_HOME` environment variable if set.
@@ -92,18 +92,18 @@ const xdgConfigHome = () =>
  * @public
  */
 export const defaultUserConfigPath = () =>
-  join(xdgConfigHome(), "arxiv-cli", "config.json");
+  join(xdgConfigHome(), "rsearch", "config.json");
 
 /**
  * Returns the default project config file path.
  *
  * @param cwd - Current working directory
- * @returns Path to `<cwd>/.arxivrc.json`
+ * @returns Path to `<cwd>/.rsearchrc.json`
  *
  * @public
  */
 export const defaultProjectConfigPath = (cwd: string) =>
-  resolve(cwd, ".arxivrc.json");
+  resolve(cwd, ".rsearchrc.json");
 
 /**
  * Loads and merges configuration from user and project config files.
@@ -128,8 +128,8 @@ export const defaultProjectConfigPath = (cwd: string) =>
  *
  * @remarks
  * Config precedence (later sources override earlier):
- * 1. User config: `~/.config/arxiv-cli/config.json`
- * 2. Project config: `<cwd>/.arxivrc.json`
+ * 1. User config: `~/.config/rsearch/config.json`
+ * 2. Project config: `<cwd>/.rsearchrc.json`
  *
  * When `explicitPath` is provided, only that file is loaded.
  * Missing optional files are silently skipped.
@@ -191,19 +191,19 @@ const parseNonNegativeIntEnv = (name: string, value: string | undefined): number
  *
  * @remarks
  * Supported environment variables:
- * - `ARXIV_API_BASE_URL` - API base URL
- * - `ARXIV_PDF_BASE_URL` - PDF base URL
- * - `ARXIV_USER_AGENT` - User-Agent header
- * - `ARXIV_TIMEOUT_MS` - Request timeout (positive integer)
- * - `ARXIV_RATE_LIMIT_MS` - Rate limit interval (positive integer)
- * - `ARXIV_MAX_RETRIES` - Max retry attempts (non-negative integer)
- * - `ARXIV_RETRY_BASE_DELAY_MS` - Retry base delay (non-negative integer)
- * - `ARXIV_CACHE` - Enable/disable cache (true/false/1/0)
- * - `ARXIV_CACHE_DIR` - Disk cache directory path
- * - `ARXIV_CACHE_TTL_MS` - Cache TTL in milliseconds (positive integer)
- * - `ARXIV_PAGE_SIZE` - Default page size (positive integer)
- * - `ARXIV_DOWNLOAD_DIR` - Default download directory
- * - `ARXIV_DEBUG` - Enable debug logging (true/false/1/0)
+ * - `RSEARCH_API_BASE_URL` - API base URL
+ * - `RSEARCH_PDF_BASE_URL` - PDF base URL
+ * - `RSEARCH_USER_AGENT` - User-Agent header
+ * - `RSEARCH_TIMEOUT_MS` - Request timeout (positive integer)
+ * - `RSEARCH_RATE_LIMIT_MS` - Rate limit interval (positive integer)
+ * - `RSEARCH_MAX_RETRIES` - Max retry attempts (non-negative integer)
+ * - `RSEARCH_RETRY_BASE_DELAY_MS` - Retry base delay (non-negative integer)
+ * - `RSEARCH_CACHE` - Enable/disable cache (true/false/1/0)
+ * - `RSEARCH_CACHE_DIR` - Disk cache directory path
+ * - `RSEARCH_CACHE_TTL_MS` - Cache TTL in milliseconds (positive integer)
+ * - `RSEARCH_PAGE_SIZE` - Default page size (positive integer)
+ * - `RSEARCH_DOWNLOAD_DIR` - Default download directory
+ * - `RSEARCH_DEBUG` - Enable debug logging (true/false/1/0)
  *
  * @example
  * ```ts
@@ -216,20 +216,20 @@ const parseNonNegativeIntEnv = (name: string, value: string | undefined): number
  * @public
  */
 export const envConfig = (): FileConfig => ({
-  apiBaseUrl: process.env.ARXIV_API_BASE_URL,
-  pdfBaseUrl: process.env.ARXIV_PDF_BASE_URL,
-  userAgent: process.env.ARXIV_USER_AGENT,
-  timeoutMs: parsePositiveIntEnv("ARXIV_TIMEOUT_MS", process.env.ARXIV_TIMEOUT_MS),
-  minIntervalMs: parsePositiveIntEnv("ARXIV_RATE_LIMIT_MS", process.env.ARXIV_RATE_LIMIT_MS),
-  maxRetries: parseNonNegativeIntEnv("ARXIV_MAX_RETRIES", process.env.ARXIV_MAX_RETRIES),
+  apiBaseUrl: process.env.RSEARCH_API_BASE_URL,
+  pdfBaseUrl: process.env.RSEARCH_PDF_BASE_URL,
+  userAgent: process.env.RSEARCH_USER_AGENT,
+  timeoutMs: parsePositiveIntEnv("RSEARCH_TIMEOUT_MS", process.env.RSEARCH_TIMEOUT_MS),
+  minIntervalMs: parsePositiveIntEnv("RSEARCH_RATE_LIMIT_MS", process.env.RSEARCH_RATE_LIMIT_MS),
+  maxRetries: parseNonNegativeIntEnv("RSEARCH_MAX_RETRIES", process.env.RSEARCH_MAX_RETRIES),
   retryBaseDelayMs: parseNonNegativeIntEnv(
-    "ARXIV_RETRY_BASE_DELAY_MS",
-    process.env.ARXIV_RETRY_BASE_DELAY_MS
+    "RSEARCH_RETRY_BASE_DELAY_MS",
+    process.env.RSEARCH_RETRY_BASE_DELAY_MS
   ),
-  cache: parseBooleanEnv("ARXIV_CACHE", process.env.ARXIV_CACHE),
-  cacheDir: process.env.ARXIV_CACHE_DIR,
-  cacheTtlMs: parsePositiveIntEnv("ARXIV_CACHE_TTL_MS", process.env.ARXIV_CACHE_TTL_MS),
-  pageSize: parsePositiveIntEnv("ARXIV_PAGE_SIZE", process.env.ARXIV_PAGE_SIZE),
-  defaultDownloadDir: process.env.ARXIV_DOWNLOAD_DIR,
-  debug: parseBooleanEnv("ARXIV_DEBUG", process.env.ARXIV_DEBUG)
+  cache: parseBooleanEnv("RSEARCH_CACHE", process.env.RSEARCH_CACHE),
+  cacheDir: process.env.RSEARCH_CACHE_DIR,
+  cacheTtlMs: parsePositiveIntEnv("RSEARCH_CACHE_TTL_MS", process.env.RSEARCH_CACHE_TTL_MS),
+  pageSize: parsePositiveIntEnv("RSEARCH_PAGE_SIZE", process.env.RSEARCH_PAGE_SIZE),
+  defaultDownloadDir: process.env.RSEARCH_DOWNLOAD_DIR,
+  debug: parseBooleanEnv("RSEARCH_DEBUG", process.env.RSEARCH_DEBUG)
 });

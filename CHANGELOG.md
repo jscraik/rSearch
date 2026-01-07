@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and adheres to Semantic Versioning.
 
-Last updated: 2026-01-05
+Last updated: 2026-01-07
 
 ## Doc requirements
 - Audience: Users and maintainers tracking release changes.
@@ -64,6 +64,6 @@ Last updated: 2026-01-05
 
 ## Evidence bundle
 - Standards mapping: CommonMark structure, release documentation best practices.
-- Automated checks: vale run on 2026-01-04 (0 errors, 0 warnings).
-- Review artifact: Self-review completed on 2026-01-04.
+- Automated checks: vale run on 2026-01-07 (0 errors, 0 warnings).
+- Review artifact: Self-review completed on 2026-01-07.
 - Deviations: None.

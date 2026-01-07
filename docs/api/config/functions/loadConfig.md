@@ -1,14 +1,14 @@
-[**arxiv-cli**](../../README.md)
+[**rSearch**](../../README.md)
 
 ***
 
-[arxiv-cli](../../README.md) / [config](../README.md) / loadConfig
+[rSearch](../../README.md) / [config](../README.md) / loadConfig
 
 # Function: loadConfig()
 
 > **loadConfig**(`cwd`, `explicitPath?`): `Promise`\<[`LoadedConfig`](../type-aliases/LoadedConfig.md)\>
 
-Defined in: [src/config.ts:139](https://github.com/jscraik/arXiv-CLI/blob/main/src/config.ts#L139)
+Defined in: [src/config.ts:139](https://github.com/jscraik/rSearch/blob/main/src/config.ts#L139)
 
 Loads and merges configuration from user and project config files.
 
@@ -55,7 +55,7 @@ const { config } = await loadConfig(process.cwd(), "./my-config.json");
 ## Remarks
 
 Config precedence (later sources override earlier):
-1. User config: `~/.config/arxiv-cli/config.json`
+1. User config: `~/.config/rsearch/config.json`
 2. Project config: `<cwd>/.arxivrc.json`
 
 When `explicitPath` is provided, only that file is loaded.

@@ -1,14 +1,14 @@
-[**arxiv-cli**](../../README.md)
+[**rSearch**](../../README.md)
 
 ***
 
-[arxiv-cli](../../README.md) / [config](../README.md) / defaultProjectConfigPath
+[rSearch](../../README.md) / [config](../README.md) / defaultProjectConfigPath
 
 # Function: defaultProjectConfigPath()
 
 > **defaultProjectConfigPath**(`cwd`): `string`
 
-Defined in: [src/config.ts:105](https://github.com/jscraik/arXiv-CLI/blob/main/src/config.ts#L105)
+Defined in: [src/config.ts:105](https://github.com/jscraik/rSearch/blob/main/src/config.ts#L105)
 
 Returns the default project config file path.
 

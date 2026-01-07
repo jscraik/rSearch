@@ -62,7 +62,7 @@ export type TaxonomyConfig = {
 
 const defaultConfig: TaxonomyConfig = {
   taxonomyUrl: "https://arxiv.org/category_taxonomy",
-  userAgent: `arxiv-cli/${VERSION}`,
+  userAgent: `rsearch/${VERSION}`,
   timeoutMs: 15000,
   minIntervalMs: 3000
 };

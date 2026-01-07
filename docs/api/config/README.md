@@ -1,8 +1,8 @@
-[**arxiv-cli**](../README.md)
+[**rSearch**](../README.md)
 
 ***
 
-[arxiv-cli](../README.md) / config
+[rSearch](../README.md) / config
 
 # config
 

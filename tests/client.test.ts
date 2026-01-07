@@ -74,7 +74,7 @@ describe("ArxivClient", () => {
   });
 
   it("uses disk cache when configured", async () => {
-    cacheDir = await mkdtemp(join(tmpdir(), "arxiv-cli-cache-"));
+    cacheDir = await mkdtemp(join(tmpdir(), "rsearch-cache-"));
     fetchMock.mockResolvedValue(new Response(SAMPLE_FEED, { status: 200 }));
 
     const client = new ArxivClient({

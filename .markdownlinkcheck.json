@@ -1,15 +1,15 @@
 {
   "ignorePatterns": [
-    "^https://github.com/jscraik/arXiv-CLI",
+    "^https://github.com/jscraik/rSearch",
     "^https://arxiv.org",
     "^https://export.arxiv.org",
-    "^https://www.npmjs.com/package/arxiv-cli",
+    "^https://www.npmjs.com/package/@brainwav/rsearch",
     "^https://img.shields.io"
   ],
   "replacementPatterns": [
     {
       "pattern": "^/",
-      "replacement": "https://github.com/jscraik/arXiv-CLI/blob/main/"
+      "replacement": "https://github.com/jscraik/rSearch/blob/main/"
     }
   ],
   "timeout": "10s",

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "arxiv-cli output envelope",
+  "title": "rSearch output envelope",
   "type": "object",
   "required": ["schema", "meta", "summary", "status", "data", "errors"],
   "properties": {

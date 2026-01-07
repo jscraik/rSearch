@@ -1,6 +1,6 @@
 # Release policy and SemVer
 
-Last updated: 2026-01-04
+Last updated: 2026-01-07
 
 ## Doc requirements
 - Audience: Maintainers preparing releases.
@@ -37,7 +37,7 @@ This project follows Semantic Versioning (SemVer) 2.0.0. Releases are documented
 - Confirm `dist/` is built and `package.json` `files` includes `dist` and `schemas`.
 - Run `npm pack` and inspect the tarball contents.
 - Publish with `npm publish` from a clean working tree.
-- Verify `npm view arxiv-cli version` matches the tag.
+- Verify `npm view @brainwav/rsearch version` matches the tag.
 
 ## Security releases
 - Security fixes are released as patch versions when possible.
@@ -57,6 +57,6 @@ This project follows Semantic Versioning (SemVer) 2.0.0. Releases are documented
 
 ## Evidence bundle
 - Standards mapping: CommonMark structure, release documentation best practices.
-- Automated checks: vale run on 2026-01-04 (0 errors, 0 warnings).
-- Review artifact: Self-review completed on 2026-01-04.
+- Automated checks: vale run on 2026-01-07 (0 errors, 0 warnings).
+- Review artifact: Self-review completed on 2026-01-07.
 - Deviations: None.

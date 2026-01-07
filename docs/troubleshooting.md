@@ -1,8 +1,8 @@
-# Fix common arXiv-CLI errors quickly
+# Fix common rSearch errors quickly
 
 One sentence: This guide lists the top CLI failure modes and how to resolve them.
 
-Last updated: 2026-01-04
+Last updated: 2026-01-07
 
 ## Table of contents
 - [Doc requirements](#doc-requirements)
@@ -84,7 +84,7 @@ Fix:
 Cause:
 - Disk cache is opt-in or TTL expired.
 Fix:
-- Set `--cache-dir` or `ARXIV_CACHE_DIR`, and increase `--cache-ttl` if needed.
+- Set `--cache-dir` or `RSEARCH_CACHE_DIR`, and increase `--cache-ttl` if needed.
 
 ## Reference
 - Support: `SUPPORT.md`
@@ -98,6 +98,6 @@ Fix:
 
 ## Evidence bundle
 - Standards mapping: CommonMark structure, accessibility (descriptive links).
-- Automated checks: vale run on 2026-01-04 (0 errors, 0 warnings).
-- Review artifact: Self-review completed on 2026-01-04.
+- Automated checks: vale run on 2026-01-07 (0 errors, 0 warnings).
+- Review artifact: Self-review completed on 2026-01-07.
 - Deviations: None.
