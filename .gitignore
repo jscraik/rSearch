@@ -6,3 +6,8 @@ coverage
 *.log
 .env
 .DS_Store
+
+# AI artifacts - transient only
+/ai/tmp/
+/ai/cache/
+/ai/raw/
