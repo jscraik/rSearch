@@ -73,6 +73,22 @@ describe("ArxivClient", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it("does not retry on non-retryable responses", async () => {
+    fetchMock.mockResolvedValue(new Response("", { status: 400, statusText: "Bad Request" }));
+
+    const client = new ArxivClient({
+      minIntervalMs: 0,
+      cache: false,
+      maxRetries: 2,
+      retryBaseDelayMs: 0
+    });
+
+    await expect(client.search({ searchQuery: "cat:cs.AI", maxResults: 1 }))
+      .rejects
+      .toThrow("400 Bad Request");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it("uses disk cache when configured", async () => {
     cacheDir = await mkdtemp(join(tmpdir(), "rsearch-cache-"));
     fetchMock.mockResolvedValue(new Response(SAMPLE_FEED, { status: 200 }));
