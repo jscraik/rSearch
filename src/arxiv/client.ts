@@ -419,23 +419,28 @@ export class ArxivClient {
         }
 
         if (!shouldRetry(response.status) || attempt >= this.config.maxRetries) {
-          throw new Error(`${response.status} ${response.statusText}`);
+          throw new ResponseError(response.status, response.statusText);
         }
 
         const retryAfter = parseRetryAfter(response.headers.get("retry-after"));
         const delay = retryAfter ?? computeBackoffDelay(this.config.retryBaseDelayMs, attempt);
         await sleep(delay);
+        attempt += 1;
+        continue;
       } catch (error) {
         clearTimeout(timeout);
+        if (error instanceof ResponseError) {
+          throw error;
+        }
         if (!isRetryableError(error) || attempt >= this.config.maxRetries) {
           throw error;
         }
         lastError = error instanceof Error ? error : new Error(String(error));
         const delay = computeBackoffDelay(this.config.retryBaseDelayMs, attempt);
         await sleep(delay);
+        attempt += 1;
+        continue;
       }
-
-      attempt += 1;
     }
 
     throw lastError ?? new Error("Request failed");
@@ -451,13 +456,25 @@ const fileExists = async (path: string): Promise<boolean> => {
   }
 };
 
+class ResponseError extends Error {
+  readonly status: number;
+  constructor(status: number, statusText: string) {
+    super(`${status} ${statusText}`);
+    this.name = "ResponseError";
+    this.status = status;
+  }
+}
+
 const shouldRetry = (status: number): boolean => status === 429 || status >= 500;
 
 const isRetryableError = (error: unknown): boolean => {
-  if (error instanceof Error && error.name === "AbortError") {
-    return true;
+  if (error instanceof ResponseError) {
+    return false;
   }
-  return true;
+  if (error instanceof Error) {
+    return error.name === "AbortError" || error instanceof TypeError;
+  }
+  return false;
 };
 
 const parseRetryAfter = (value: string | null): number | null => {
