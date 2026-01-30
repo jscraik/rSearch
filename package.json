@@ -57,7 +57,7 @@
   "homepage": "https://github.com/jscraik/rSearch#readme",
   "dependencies": {
     "cheerio": "^1.1.2",
-    "fast-xml-parser": "^5.3.3",
+    "fast-xml-parser": "^5.3.4",
     "pdf-parse": "^2.4.5",
     "yargs": "^18.0.0",
     "zod": "^4.3.4"
