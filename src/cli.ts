@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { ArxivClient } from "./arxiv/client.js";
+import { ArxivClient, type ArxivClientConfig } from "./arxiv/client.js";
 import type { ArxivSearchOptions } from "./arxiv/types.js";
 import type { ArxivEntry } from "./arxiv/types.js";
 import type { TaxonomyCategory, TaxonomyResult } from "./arxiv/taxonomy.js";
 import { MAX_PAGE_SIZE, MAX_TOTAL_RESULTS } from "./arxiv/query.js";
 import { envConfig, loadConfig } from "./config.js";
-import { readLines, readStdin } from "./utils/io.js";
+import { readLines, readStdin, fileExists } from "./utils/io.js";
 import {
   createEnvelope,
   formatDownloadHuman,
@@ -22,6 +22,49 @@ import { extractPdfText } from "./utils/pdf.js";
 import { filterByLicense, hasLicenseMetadata } from "./arxiv/license.js";
 import { access, mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
+
+// Type definitions for CLI arguments
+interface GlobalArgs {
+  apiBaseUrl?: string;
+  pdfBaseUrl?: string;
+  userAgent?: string;
+  timeout?: number;
+  rateLimit?: number;
+  maxRetries?: number;
+  retry?: boolean;
+  retryBaseDelay?: number;
+  cache?: boolean;
+  cacheDir?: string;
+  cacheTtl?: number;
+  pageSize?: number;
+  noCache?: boolean;
+  debug?: boolean;
+  outDir?: string;
+  config?: string;
+  contact?: string;
+  json?: boolean;
+  plain?: boolean;
+  quiet?: boolean;
+  color?: string;
+  noColor?: boolean;
+}
+
+interface RefreshArgs extends GlobalArgs {
+  refresh?: boolean;
+}
+
+interface OutputArgs {
+  json?: boolean;
+  plain?: boolean;
+  quiet?: boolean;
+  color?: string;
+  noColor?: boolean;
+}
+
+interface ColorArgs {
+  color?: string;
+  noColor?: boolean;
+}
 
 const coercePositiveInt = (label: string) => (value: unknown): number | undefined => {
   if (value === undefined) return undefined;
@@ -307,7 +350,7 @@ const cli = yargs(hideBin(process.argv))
         throw new CliError("Provide arXiv IDs or a --query to download.", 2);
       }
 
-      const format = String(args.format ?? "pdf");
+      const format = args.format ?? "pdf";
       let results: { id: string; path: string; status: string; error?: string }[] = [];
 
       if (format === "pdf") {
@@ -654,7 +697,7 @@ const validatePagingArgs = (args: { pageSize?: number; maxResults?: number; star
   }
 };
 
-const loadTaxonomy = async (args: any): Promise<TaxonomyResult> => {
+const loadTaxonomy = async (args: RefreshArgs): Promise<TaxonomyResult> => {
   const { client } = await createClientContext(args);
   const config = client.getConfig();
   return fetchTaxonomy(
@@ -770,7 +813,7 @@ const downloadAsTextFormats = async ({
   return results;
 };
 
-const renderMarkdown = (entry: any, text: string): string => {
+const renderMarkdown = (entry: ArxivEntry, text: string): string => {
   const lines = [
     `# ${entry.title ?? "Untitled"}`,
     "",
@@ -837,16 +880,7 @@ const formatCategoryTree = (taxonomy: TaxonomyResult): string => {
   return lines.join("\n").trimEnd();
 };
 
-const fileExists = async (path: string): Promise<boolean> => {
-  try {
-    await access(path);
-    return true;
-  } catch {
-    return false;
-  }
-};
-
-const resolveFlagConfig = (args: any) => ({
+const resolveFlagConfig = (args: GlobalArgs) => ({
   apiBaseUrl: args.apiBaseUrl,
   pdfBaseUrl: args.pdfBaseUrl,
   userAgent: args.userAgent,
@@ -862,7 +896,7 @@ const resolveFlagConfig = (args: any) => ({
   defaultDownloadDir: args.outDir
 });
 
-const createClientContext = async (args: any) => {
+const createClientContext = async (args: GlobalArgs) => {
   const { config } = await loadConfig(process.cwd(), args.config);
   const env = envConfig();
   const flags = resolveFlagConfig(args);
@@ -872,24 +906,28 @@ const createClientContext = async (args: any) => {
   const contact = args.contact ?? process.env.RSEARCH_CONTACT_EMAIL;
   const userAgent = resolveUserAgent(merged.userAgent, contact);
 
-  const clientConfig: Record<string, unknown> = {
-    userAgent
+  const clientConfig: Partial<ArxivClientConfig> = {
+    userAgent,
+    apiBaseUrl: merged.apiBaseUrl,
+    pdfBaseUrl: merged.pdfBaseUrl,
+    timeoutMs: merged.timeoutMs,
+    minIntervalMs: merged.minIntervalMs,
+    maxRetries: merged.maxRetries,
+    retryBaseDelayMs: merged.retryBaseDelayMs,
+    cache: merged.cache,
+    cacheDir: merged.cacheDir,
+    cacheTtlMs: merged.cacheTtlMs,
+    pageSize: merged.pageSize,
+    debug: merged.debug
   };
 
-  if (merged.apiBaseUrl) clientConfig.apiBaseUrl = merged.apiBaseUrl;
-  if (merged.pdfBaseUrl) clientConfig.pdfBaseUrl = merged.pdfBaseUrl;
-  if (typeof merged.timeoutMs === "number") clientConfig.timeoutMs = merged.timeoutMs;
-  if (typeof merged.minIntervalMs === "number") clientConfig.minIntervalMs = merged.minIntervalMs;
-  if (typeof merged.maxRetries === "number") clientConfig.maxRetries = merged.maxRetries;
-  if (typeof merged.retryBaseDelayMs === "number") clientConfig.retryBaseDelayMs = merged.retryBaseDelayMs;
-  if (typeof merged.cache === "boolean") clientConfig.cache = merged.cache;
-  if (typeof merged.cacheDir === "string") clientConfig.cacheDir = merged.cacheDir;
-  if (typeof merged.cacheTtlMs === "number") clientConfig.cacheTtlMs = merged.cacheTtlMs;
-  if (typeof merged.pageSize === "number") clientConfig.pageSize = merged.pageSize;
-  if (typeof merged.debug === "boolean") clientConfig.debug = merged.debug;
+  // Remove undefined values to avoid overriding defaults
+  const definedConfig: Partial<ArxivClientConfig> = Object.fromEntries(
+    Object.entries(clientConfig).filter(([_, value]) => value !== undefined)
+  ) as Partial<ArxivClientConfig>;
 
   return {
-    client: new ArxivClient(clientConfig as any),
+    client: new ArxivClient(definedConfig),
     defaultDownloadDir: merged.defaultDownloadDir
   };
 };
@@ -913,7 +951,7 @@ const outputResult = async ({
   exitCode = 0,
   errors = []
 }: {
-  args: any;
+  args: OutputArgs;
   schema: string;
   summary: string;
   json: unknown;
@@ -957,7 +995,7 @@ const outputResult = async ({
   if (exitCode) process.exitCode = exitCode;
 };
 
-const resolveColorMode = (args: any): "auto" | "always" | "never" => {
+const resolveColorMode = (args: ColorArgs): "auto" | "always" | "never" => {
   if (args.noColor) return "never";
   const mode = String(args.color ?? "auto");
   if (mode === "always") return "always";
@@ -967,8 +1005,8 @@ const resolveColorMode = (args: any): "auto" | "always" | "never" => {
   return "auto";
 };
 
-const isJsonRequested = (args?: any): boolean => {
-  if (args && typeof args === "object" && "json" in args && args.json === true) {
+const isJsonRequested = (args?: unknown): boolean => {
+  if (args && typeof args === "object" && "json" in args && (args as { json?: unknown }).json === true) {
     return true;
   }
   return process.argv.includes("--json");

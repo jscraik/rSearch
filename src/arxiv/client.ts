@@ -2,10 +2,11 @@ import { buildQuery, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MAX_TOTAL_RESULTS } from 
 import { parseAtom } from "./parser.js";
 import type { ArxivEntry, ArxivSearchOptions, ArxivSearchResult } from "./types.js";
 import { RateLimiter } from "./rateLimiter.js";
-import { access, mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { VERSION } from "../version.js";
+import { fileExists } from "../utils/io.js";
 
 /**
  * Configuration options for the arXiv API client.
@@ -97,6 +98,9 @@ const defaultConfig: ArxivClientConfig = {
 export class ArxivClient {
   private config: ArxivClientConfig;
   private cache = new Map<string, string>();
+  private cacheTimestamps = new Map<string, number>();
+  private readonly DEFAULT_CACHE_TTL_MS = 5 * 60 * 1000;
+  private readonly MAX_CACHE_SIZE = 100;
   private limiter: RateLimiter;
 
   /**
@@ -116,6 +120,24 @@ export class ArxivClient {
   constructor(config: Partial<ArxivClientConfig> = {}) {
     this.config = { ...defaultConfig, ...config };
     this.limiter = new RateLimiter(this.config.minIntervalMs);
+  }
+
+  /**
+   * Clears all in-memory cached responses.
+   *
+   * @remarks
+   * Useful for long-running processes that need periodic cache clearing
+   * or when switching contexts (e.g., different search spaces).
+   *
+   * @example
+   * ```ts
+   * client.clearCache();
+   * // Next request will fetch fresh data
+   * ```
+   */
+  public clearCache(): void {
+    this.cache.clear();
+    this.cacheTimestamps.clear();
   }
 
   /**
@@ -343,14 +365,34 @@ export class ArxivClient {
   }
 
   private async request(url: string): Promise<string> {
+    // Check cache with TTL
     if (this.config.cache && this.cache.has(url)) {
-      return this.cache.get(url) ?? "";
+      const timestamp = this.cacheTimestamps.get(url) ?? 0;
+      const age = Date.now() - timestamp;
+
+      if (age > this.DEFAULT_CACHE_TTL_MS) {
+        // Evict stale entry
+        this.cache.delete(url);
+        this.cacheTimestamps.delete(url);
+      } else {
+        return this.cache.get(url) ?? "";
+      }
     }
 
     if (this.config.cache && this.config.cacheDir) {
       const cached = await readDiskCache(url, this.config.cacheDir, this.config.cacheTtlMs);
       if (cached !== null) {
+        // Enforce max cache size before storing
+        if (this.cache.size >= this.MAX_CACHE_SIZE) {
+          const firstKey = this.cache.keys().next().value;
+          if (firstKey) {
+            this.cache.delete(firstKey);
+            this.cacheTimestamps.delete(firstKey);
+          }
+        }
+
         this.cache.set(url, cached);
+        this.cacheTimestamps.set(url, Date.now());
         return cached;
       }
     }
@@ -364,7 +406,17 @@ export class ArxivClient {
 
     const text = await response.text();
     if (this.config.cache) {
+      // Enforce max cache size before storing
+      if (this.cache.size >= this.MAX_CACHE_SIZE) {
+        const firstKey = this.cache.keys().next().value;
+        if (firstKey) {
+          this.cache.delete(firstKey);
+          this.cacheTimestamps.delete(firstKey);
+        }
+      }
+
       this.cache.set(url, text);
+      this.cacheTimestamps.set(url, Date.now());
     }
     if (this.config.cache && this.config.cacheDir) {
       await writeDiskCache(url, this.config.cacheDir, text);
@@ -442,22 +494,38 @@ export class ArxivClient {
   }
 }
 
-const fileExists = async (path: string): Promise<boolean> => {
-  try {
-    await access(path);
-    return true;
-  } catch {
-    return false;
-  }
-};
-
 const shouldRetry = (status: number): boolean => status === 429 || status >= 500;
 
 const isRetryableError = (error: unknown): boolean => {
+  // AbortError from timeout/cancellation - retry
   if (error instanceof Error && error.name === "AbortError") {
     return true;
   }
-  return true;
+
+  // Network errors that might be transient
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase();
+
+    // Retry on specific network errors
+    if (message.includes("econnreset") ||  // Connection reset
+        message.includes("etimedout") ||   // Timeout
+        message.includes("esockettimedout") || // Socket timeout
+        message.includes("enetunreach") ||  // Network unreachable
+        message.includes("econnaborted")) {  // Connection aborted
+      return true;
+    }
+
+    // TypeError from fetch (e.g., network down)
+    if (error instanceof TypeError &&
+        (message.includes("network") ||
+         message.includes("fetch") ||
+         message.includes("failed to fetch"))) {
+      return true;
+    }
+  }
+
+  // Default: don't retry (fail fast on DNS failures, connection refused, certs, etc.)
+  return false;
 };
 
 const parseRetryAfter = (value: string | null): number | null => {

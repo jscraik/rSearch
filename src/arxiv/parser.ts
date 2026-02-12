@@ -12,6 +12,22 @@ const parser = new XMLParser({
   removeNSPrefix: true
 });
 
+type RawEntry = {
+  id?: string | { [key: string]: string };
+  title?: string | { [key: string]: string };
+  summary?: string | { [key: string]: string };
+  published?: string | { [key: string]: string };
+  updated?: string | { [key: string]: string };
+  author?: string | { [key: string]: string } | Array<string | { [key: string]: string }>;
+  category?: string | { [key: string]: string } | Array<string | { [key: string]: string }>;
+  link?: string | { [key: string]: string } | Array<string | { [key: string]: string }>;
+  primary_category?: { term?: string };
+  doi?: string | { [key: string]: string };
+  comment?: string | { [key: string]: string };
+  journal_ref?: string | { [key: string]: string };
+  license?: string | { [key: string]: string };
+};
+
 const normalizeArray = <T>(value: T | T[] | undefined): T[] => {
   if (!value) return [];
   return Array.isArray(value) ? value : [value];
@@ -75,20 +91,23 @@ export const parseAtom = (xml: string): ParsedFeed => {
   const feed = parsed?.feed ?? {};
   const entriesRaw = normalizeArray(feed.entry);
 
-  const entries: ArxivEntry[] = entriesRaw.map((entry: any) => {
-    const links = normalizeArray(entry.link).map((link: any) => ({
-      href: String(link.href ?? link),
-      rel: link.rel ? String(link.rel) : undefined,
-      type: link.type ? String(link.type) : undefined,
-      title: link.title ? String(link.title) : undefined
-    }));
+  const entries: ArxivEntry[] = entriesRaw.map((entry: RawEntry) => {
+    const links = normalizeArray(entry.link).map((link: unknown) => {
+      const linkObj = typeof link === "object" && link !== null ? link as Record<string, unknown> : { href: link };
+      return {
+        href: String(linkObj.href ?? link),
+        rel: linkObj.rel ? String(linkObj.rel) : undefined,
+        type: linkObj.type ? String(linkObj.type) : undefined,
+        title: linkObj.title ? String(linkObj.title) : undefined
+      };
+    });
 
-    const categories = normalizeArray(entry.category).map((cat: any) =>
-      String(cat.term ?? cat)
+    const categories = normalizeArray(entry.category).map((cat: unknown) =>
+      String(typeof cat === "object" && cat !== null && "term" in cat ? (cat as { term?: unknown }).term ?? cat : cat)
     );
 
-    const authors = normalizeArray(entry.author).map((author: any) =>
-      String(author.name ?? author)
+    const authors = normalizeArray(entry.author).map((author: unknown) =>
+      String(typeof author === "object" && author !== null && "name" in author ? (author as { name?: unknown }).name ?? author : author)
     );
 
     const entryId = String(entry.id ?? "");

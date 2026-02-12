@@ -1,4 +1,5 @@
 import { createInterface } from "node:readline";
+import { access } from "node:fs/promises";
 
 /**
  * Reads all input from stdin as a single string.
@@ -54,3 +55,24 @@ export const readLines = async (): Promise<string[]> => {
  * @public
  */
 export const isTty = () => process.stdout.isTTY ?? false;
+
+/**
+ * Checks if a file exists at the given path.
+ *
+ * @param path - File path to check
+ * @returns Promise resolving to `true` if file exists, `false` otherwise
+ *
+ * @remarks
+ * Uses `fs.promises.access` which checks without opening the file.
+ * Returns `false` for any error (ENOENT, EACCES, etc.), not just missing files.
+ *
+ * @public
+ */
+export const fileExists = async (path: string): Promise<boolean> => {
+  try {
+    await access(path);
+    return true;
+  } catch {
+    return false;
+  }
+};
