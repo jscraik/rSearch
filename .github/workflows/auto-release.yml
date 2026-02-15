@@ -24,6 +24,8 @@ jobs:
               with:
                   fetch-depth: 0
 
+            - name: Ensure GitHub CLI is installed
+              run: bash scripts/ensure-gh-cli.sh
             - name: Check for release-worthy changes
               id: check
               run: |
