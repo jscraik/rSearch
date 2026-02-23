@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and adheres to Semantic Versioning.
 
-Last updated: 2026-01-07
+Last updated: 2026-02-23
 
 ## Doc requirements
 - Audience: Users and maintainers tracking release changes.
@@ -15,6 +15,14 @@ Last updated: 2026-01-07
 - Required approvals: 1 maintainer.
 
 ## [Unreleased]
+
+### Added
+
+### Changed
+
+### Fixed
+
+## [0.1.2] - 2026-02-23
 
 ### Added
 

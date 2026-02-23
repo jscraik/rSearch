@@ -1,6 +1,6 @@
 {
   "name": "@brainwav/rsearch",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "rSearch CLI for arXiv",
   "type": "module",
   "publishConfig": {
