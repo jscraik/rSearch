@@ -42,17 +42,16 @@ Last updated: 2026-01-07
 
 ## Quickstart
 
-### 1) Install or set up
+### 1) Install
 
 ```sh
-npm install
-npm run build
+npm install -g @brainwav/rsearch
 ```
 
-### 2) Run it
+### 2) Run a search
 
 ```sh
-node dist/cli.js search "cat:cs.AI" --max-results 5
+rsearch search "cat:cs.AI" --max-results 5
 ```
 
 ### 3) Verify
@@ -60,8 +59,6 @@ node dist/cli.js search "cat:cs.AI" --max-results 5
 Expected output:
 
 - A list of results with IDs and titles.
-
-> Pro tip: install `@brainwav/rsearch` and you can run `rsearch search "cat:cs.AI" --max-results 5` instead of `node dist/cli.js`.
 
 ## Common tasks
 
@@ -71,7 +68,7 @@ Expected output:
 - Steps:
 
 ```sh
-node dist/cli.js search "cat:cs.LG" --max-results 10
+rsearch search "cat:cs.LG" --max-results 10
 ```
 
 - Verify: output shows `Total results` and a list of entries.
@@ -82,7 +79,7 @@ node dist/cli.js search "cat:cs.LG" --max-results 10
 - Steps:
 
 ```sh
-node dist/cli.js search "cat:cs.AI" --require-license --max-results 10
+rsearch search "cat:cs.AI" --require-license --max-results 10
 ```
 
 - Verify: summary mentions filtered results when license metadata is missing.
@@ -93,7 +90,7 @@ node dist/cli.js search "cat:cs.AI" --require-license --max-results 10
 - Steps:
 
 ```sh
-node dist/cli.js fetch 2002.00762 --json
+rsearch fetch 2002.00762 --json
 ```
 
 - Verify: JSON includes `absUrl` and `pdfUrl`.
@@ -104,7 +101,7 @@ node dist/cli.js fetch 2002.00762 --json
 - Steps:
 
 ```sh
-node dist/cli.js download 2002.00762 --out-dir ./papers
+rsearch download 2002.00762 --out-dir ./papers
 ```
 
 - Verify: `./papers/2002.00762.pdf` exists.
@@ -115,8 +112,8 @@ node dist/cli.js download 2002.00762 --out-dir ./papers
 - Steps:
 
 ```sh
-node dist/cli.js download 2002.00762 --format md --out-dir ./papers
-node dist/cli.js download 2002.00762 --format json --out-dir ./papers
+rsearch download 2002.00762 --format md --out-dir ./papers
+rsearch download 2002.00762 --format json --out-dir ./papers
 ```
 
 - Verify: `./papers/2002.00762.md` or `./papers/2002.00762.json` exists.
@@ -127,7 +124,7 @@ node dist/cli.js download 2002.00762 --format json --out-dir ./papers
 - Steps:
 
 ```sh
-node dist/cli.js download 2002.00762 --format json --require-license --out-dir ./papers
+rsearch download 2002.00762 --format json --require-license --out-dir ./papers
 ```
 
 - Verify: failures are reported with `License metadata missing` when unavailable.
@@ -138,7 +135,7 @@ node dist/cli.js download 2002.00762 --format json --require-license --out-dir .
 - Steps:
 
 ```sh
-node dist/cli.js download 2002.00762 --format md --keep-pdf --out-dir ./papers
+rsearch download 2002.00762 --format md --keep-pdf --out-dir ./papers
 ```
 
 - Verify: both `2002.00762.md` and `2002.00762.pdf` exist.
@@ -149,9 +146,9 @@ node dist/cli.js download 2002.00762 --format md --keep-pdf --out-dir ./papers
 - Steps:
 
 ```sh
-node dist/cli.js urls "cat:cs.AI"
-node dist/cli.js urls --ids 2002.00762 2101.00001
-node dist/cli.js urls "cat:cs.AI" --require-license
+rsearch urls "cat:cs.AI"
+rsearch urls --ids 2002.00762 2101.00001
+rsearch urls "cat:cs.AI" --require-license
 ```
 
 - Verify: each line includes an abs URL and PDF URL.
@@ -162,8 +159,8 @@ node dist/cli.js urls "cat:cs.AI" --require-license
 - Steps:
 
 ```sh
-node dist/cli.js categories tree
-node dist/cli.js categories list --group "Computer Science"
+rsearch categories tree
+rsearch categories list --group "Computer Science"
 ```
 
 - Verify: group names and category IDs are listed.
@@ -185,8 +182,8 @@ Cause:
 Fix:
 
 ```sh
-node dist/cli.js search "cat:cs.AI"
-node dist/cli.js fetch 2002.00762
+rsearch search "cat:cs.AI"
+rsearch fetch 2002.00762
 ```
 
 ### Symptom: “arXiv API request failed (429/5xx)”
