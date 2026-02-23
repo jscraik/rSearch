@@ -1,3 +1,25 @@
 version: 2
 updates:
-  - package-ecosystem: "github-actions"\n    directory: "/"\n    schedule:\n      interval: "weekly"\n      day: "monday"\n      time: "06:00"\n      timezone: "Etc/UTC"\n  - package-ecosystem: "npm"\n    directory: "/"\n    schedule:\n      interval: "weekly"\n    open-pull-requests-limit: 3\n      day: "monday"\n      time: "06:00"\n      timezone: "Etc/UTC"\n    rebase-strategy: "auto"\n    commit-message:\n      prefix: "[security]"\n      include: "scope"\n    labels:\n      - "dependencies"\n      - "security"\n
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Etc/UTC"
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 3
+    rebase-strategy: "auto"
+    commit-message:
+      prefix: "[security]"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "security"
+
