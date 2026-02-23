@@ -56,20 +56,20 @@
   },
   "homepage": "https://github.com/jscraik/rSearch#readme",
   "dependencies": {
-    "cheerio": "^1.1.2",
+    "cheerio": "^1.2.0",
     "fast-xml-parser": "^5.3.4",
     "pdf-parse": "^2.4.5",
     "yargs": "^18.0.0",
-    "zod": "^4.3.4"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@types/node": "^25.0.3",
+    "@types/node": "^25.2.2",
     "@types/yargs": "^17.0.35",
     "markdown-link-check": "^3.14.2",
     "tsx": "^4.21.0",
-    "typedoc": "^0.28.15",
-    "typedoc-plugin-markdown": "^4.9.0",
+    "typedoc": "^0.28.16",
+    "typedoc-plugin-markdown": "^4.10.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.16"
+    "vitest": "^4.0.18"
   }
 }
