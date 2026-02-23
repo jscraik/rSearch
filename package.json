@@ -3,6 +3,9 @@
   "version": "0.1.1",
   "description": "rSearch CLI for arXiv",
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
     "rsearch": "dist/cli.js"
   },
@@ -26,11 +29,10 @@
     "ci": "npm run typecheck && npm test && npm run build",
     "docs:check-links": "markdown-link-check *.md docs/*.md",
     "docs:api": "typedoc",
-    "release": "npm run ci && npm run release:version && npm run release:publish",
-    "release:version": "npm version patch --no-git-tag-version && npm run changelog:update",
-    "release:minor": "npm version minor --no-git-tag-version && npm run changelog:update",
-    "release:major": "npm version major --no-git-tag-version && npm run changelog:update",
-    "release:publish": "git add . && git commit -m \"chore: release v$(node -p \"require('./package.json').version\")\" && git tag v$(node -p \"require('./package.json').version\") && git push && git push --tags",
+    "prepublishOnly": "npm run ci",
+    "preversion": "git branch --show-current | grep -q '^main$' || (echo 'Releases must occur on main' && exit 1) && npm run prepublishOnly",
+    "version": "node scripts/update-changelog.js && git add CHANGELOG.md",
+    "postversion": "git push && git push --tags",
     "changelog:update": "node scripts/update-changelog.js",
     "prepack": "npm run build",
     "commit": "node scripts/commit.js"
