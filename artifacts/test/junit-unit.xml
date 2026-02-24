@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="15" failures="0" errors="0" time="3.030693542">
+    <testsuite name="tests/cli.test.ts" timestamp="2026-02-24T14:12:54.086Z" hostname="Mac-Studio.local" tests="6" failures="0" errors="0" skipped="0" time="2.999830458">
+        <testcase classname="tests/cli.test.ts" name="cli &gt; prints help" time="0.7883935">
+        </testcase>
+        <testcase classname="tests/cli.test.ts" name="cli &gt; emits JSON error envelope on usage error" time="0.438655709">
+        </testcase>
+        <testcase classname="tests/cli.test.ts" name="cli &gt; respects --no-input when query is missing" time="0.440965583">
+        </testcase>
+        <testcase classname="tests/cli.test.ts" name="cli &gt; fails when explicit config file is missing" time="0.437548375">
+        </testcase>
+        <testcase classname="tests/cli.test.ts" name="cli &gt; rejects invalid numeric flags" time="0.441520083">
+        </testcase>
+        <testcase classname="tests/cli.test.ts" name="cli &gt; maps --no-retry to maxRetries=0" time="0.451518166">
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/client.test.ts" timestamp="2026-02-24T14:12:54.086Z" hostname="Mac-Studio.local" tests="4" failures="0" errors="0" skipped="0" time="0.025307375">
+        <testcase classname="tests/client.test.ts" name="ArxivClient &gt; builds a search request and parses results" time="0.019485042">
+        </testcase>
+        <testcase classname="tests/client.test.ts" name="ArxivClient &gt; retries on retryable responses" time="0.001945708">
+        </testcase>
+        <testcase classname="tests/client.test.ts" name="ArxivClient &gt; does not retry on non-retryable responses" time="0.000687959">
+        </testcase>
+        <testcase classname="tests/client.test.ts" name="ArxivClient &gt; uses disk cache when configured" time="0.002664334">
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/license.test.ts" timestamp="2026-02-24T14:12:54.086Z" hostname="Mac-Studio.local" tests="2" failures="0" errors="0" skipped="0" time="0.001627917">
+        <testcase classname="tests/license.test.ts" name="license helpers &gt; detects license metadata" time="0.00049225">
+        </testcase>
+        <testcase classname="tests/license.test.ts" name="license helpers &gt; filters entries without license metadata" time="0.000539209">
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/parser.test.ts" timestamp="2026-02-24T14:12:54.087Z" hostname="Mac-Studio.local" tests="1" failures="0" errors="0" skipped="0" time="0.002602917">
+        <testcase classname="tests/parser.test.ts" name="parseAtom &gt; parses entries and metadata" time="0.002109292">
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/query.test.ts" timestamp="2026-02-24T14:12:54.087Z" hostname="Mac-Studio.local" tests="2" failures="0" errors="0" skipped="0" time="0.001324875">
+        <testcase classname="tests/query.test.ts" name="buildQuery &gt; builds search query params" time="0.000689125">
+        </testcase>
+        <testcase classname="tests/query.test.ts" name="buildQuery &gt; builds id_list params" time="0.000116833">
+        </testcase>
+    </testsuite>
+</testsuites>

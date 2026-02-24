@@ -17,13 +17,44 @@ const normalizeArray = <T>(value: T | T[] | undefined): T[] => {
   return Array.isArray(value) ? value : [value];
 };
 
+const normalizeText = (value: unknown): string | undefined => {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  const text = String(value).replace(/\s+/g, " ").trim();
+  if (!text || text === "undefined" || text === "null") {
+    return undefined;
+  }
+  return text;
+};
+
 const extractId = (entryId: string): string => {
-  const absMatch = entryId.match(/arxiv\.org\/abs\/(.+)$/i);
-  return absMatch?.[1] ?? entryId;
+  const absMatch = entryId.match(/arxiv\.org\/abs\/([^?#]+)/i);
+  if (absMatch?.[1]) {
+    return absMatch[1].replace(/\/+$/, "");
+  }
+
+  if (/^https?:\/\//i.test(entryId)) {
+    try {
+      const parsed = new URL(entryId);
+      if (parsed.hostname.toLowerCase().endsWith("arxiv.org")) {
+        const marker = "/abs/";
+        const lowerPath = parsed.pathname.toLowerCase();
+        const idx = lowerPath.indexOf(marker);
+        if (idx !== -1) {
+          return parsed.pathname.slice(idx + marker.length).replace(/\/+$/, "");
+        }
+      }
+    } catch {
+      // Fall through to raw value.
+    }
+  }
+
+  return entryId.replace(/[?#].*$/, "").replace(/\/+$/, "");
 };
 
 const extractAbsUrl = (entryId: string): string => {
-  if (entryId.startsWith("http://") || entryId.startsWith("https://")) {
+  if (/^https?:\/\//i.test(entryId)) {
     return entryId;
   }
   return `https://arxiv.org/abs/${entryId}`;
@@ -41,6 +72,50 @@ const pickLicenseUrl = (links: ArxivEntry["links"]): string | undefined =>
 
 const looksLikeUrl = (value: string): boolean =>
   /^https?:\/\//i.test(value);
+
+const pickLicenseFields = (rawLicense: unknown): { license?: string; licenseUrl?: string } => {
+  const values = Array.isArray(rawLicense) ? rawLicense : [rawLicense];
+
+  for (const value of values) {
+    if (!value) continue;
+
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (!trimmed) continue;
+      return {
+        license: trimmed,
+        licenseUrl: looksLikeUrl(trimmed) ? trimmed : undefined
+      };
+    }
+
+    if (typeof value === "object") {
+      const node = value as Record<string, unknown>;
+      const href = typeof node.href === "string" ? node.href.trim() : "";
+      const text =
+        typeof node["#text"] === "string"
+          ? node["#text"].trim()
+          : typeof node.text === "string"
+            ? node.text.trim()
+            : "";
+
+      const license = text || href || undefined;
+      const licenseUrl = [href, text].find((candidate) => candidate && looksLikeUrl(candidate));
+      if (license || licenseUrl) {
+        return { license, licenseUrl };
+      }
+    }
+  }
+
+  return {};
+};
+
+const parseNonNegativeInt = (value: unknown, fallback: number): number => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return fallback;
+  }
+  return Math.trunc(parsed);
+};
 
 /**
  * Parsed arXiv Atom feed result.
@@ -75,58 +150,73 @@ export const parseAtom = (xml: string): ParsedFeed => {
   const feed = parsed?.feed ?? {};
   const entriesRaw = normalizeArray(feed.entry);
 
-  const entries: ArxivEntry[] = entriesRaw.map((entry: any) => {
-    const links = normalizeArray(entry.link).map((link: any) => ({
-      href: String(link.href ?? link),
-      rel: link.rel ? String(link.rel) : undefined,
-      type: link.type ? String(link.type) : undefined,
-      title: link.title ? String(link.title) : undefined
-    }));
+  const entries: ArxivEntry[] = entriesRaw
+    .map((entry: any): ArxivEntry | null => {
+    const links = normalizeArray(entry.link)
+      .map((link: any): ArxivEntry["links"][number] | null => {
+        const href = normalizeText(link?.href ?? (typeof link === "string" ? link : undefined));
+        if (!href) {
+          return null;
+        }
 
-    const categories = normalizeArray(entry.category).map((cat: any) =>
-      String(cat.term ?? cat)
-    );
+        const normalized: ArxivEntry["links"][number] = { href };
+        const rel = normalizeText(link?.rel);
+        const type = normalizeText(link?.type);
+        const title = normalizeText(link?.title);
+        if (rel) normalized.rel = rel;
+        if (type) normalized.type = type;
+        if (title) normalized.title = title;
+        return normalized;
+      })
+      .filter((link): link is ArxivEntry["links"][number] => link !== null);
 
-    const authors = normalizeArray(entry.author).map((author: any) =>
-      String(author.name ?? author)
-    );
+    const categories = normalizeArray(entry.category)
+      .map((cat: any) => normalizeText(cat?.term ?? cat))
+      .filter((category): category is string => Boolean(category));
 
-    const entryId = String(entry.id ?? "");
-    const arxivId = extractId(entryId);
-    const absUrl = extractAbsUrl(entryId);
+    const authors = normalizeArray(entry.author)
+      .map((author: any) => normalizeText(author?.name ?? author))
+      .filter((author): author is string => Boolean(author));
 
-    const primaryCategory = entry.primary_category?.term
-      ? String(entry.primary_category.term)
-      : undefined;
+      const entryId = normalizeText(entry.id) ?? "";
+      const arxivId = normalizeText(extractId(entryId));
+      if (!arxivId) {
+        return null;
+      }
+      const absUrl = extractAbsUrl(entryId);
 
-    const record: ArxivEntry = {
-      id: arxivId,
-      title: String(entry.title ?? "").replace(/\s+/g, " ").trim(),
-      summary: String(entry.summary ?? "").replace(/\s+/g, " ").trim(),
-      published: String(entry.published ?? ""),
-      updated: String(entry.updated ?? ""),
-      authors,
-      categories,
-      primaryCategory,
-      links,
-      doi: entry.doi ? String(entry.doi) : undefined,
-      comment: entry.comment ? String(entry.comment) : undefined,
-      journalRef: entry.journal_ref ? String(entry.journal_ref) : undefined,
-      absUrl
-    };
+      const primaryCategory = normalizeText(entry.primary_category?.term);
 
-    record.pdfUrl = pickPdfUrl(links);
-    record.license = entry.license ? String(entry.license).trim() : undefined;
-    record.licenseUrl = pickLicenseUrl(links)
-      ?? (record.license && looksLikeUrl(record.license) ? record.license : undefined);
+      const record: ArxivEntry = {
+        id: arxivId,
+        title: normalizeText(entry.title) ?? "",
+        summary: normalizeText(entry.summary) ?? "",
+        published: normalizeText(entry.published) ?? "",
+        updated: normalizeText(entry.updated) ?? "",
+        authors,
+        categories,
+        primaryCategory,
+        links,
+        doi: normalizeText(entry.doi),
+        comment: normalizeText(entry.comment),
+        journalRef: normalizeText(entry.journal_ref),
+        absUrl
+      };
 
-    return record;
-  });
+      const parsedLicense = pickLicenseFields(entry.license);
+      record.pdfUrl = pickPdfUrl(links);
+      record.license = parsedLicense.license;
+      record.licenseUrl = pickLicenseUrl(links)
+        ?? parsedLicense.licenseUrl;
+
+      return record;
+    })
+    .filter((entry): entry is ArxivEntry => entry !== null);
 
   return {
-    totalResults: Number(feed.totalResults ?? 0),
-    startIndex: Number(feed.startIndex ?? 0),
-    itemsPerPage: Number(feed.itemsPerPage ?? entries.length),
+    totalResults: parseNonNegativeInt(feed.totalResults, 0),
+    startIndex: parseNonNegativeInt(feed.startIndex, 0),
+    itemsPerPage: parseNonNegativeInt(feed.itemsPerPage, entries.length),
     entries
   };
 };

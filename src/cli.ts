@@ -22,6 +22,27 @@ import { extractPdfText } from "./utils/pdf.js";
 import { filterByLicense, hasLicenseMetadata } from "./arxiv/license.js";
 import { access, mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
+import { spawnSync } from "node:child_process";
+import { homedir } from "node:os";
+
+const installBrokenPipeHandlers = () => {
+  const handlePipeError = (error: unknown) => {
+    if (error && typeof error === "object" && "code" in error && (error as { code?: string }).code === "EPIPE") {
+      process.exit(0);
+      return;
+    }
+
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error(String(error));
+  };
+
+  process.stdout.on("error", handlePipeError);
+  process.stderr.on("error", handlePipeError);
+};
+
+installBrokenPipeHandlers();
 
 const coercePositiveInt = (label: string) => (value: unknown): number | undefined => {
   if (value === undefined) return undefined;
@@ -229,7 +250,7 @@ const cli = yargs(hideBin(process.argv))
         .option("max-results", { type: "number", describe: "Max results to return" })
         .option("page-size", { type: "number", describe: "API page size (<=2000)" }),
     async (args) => {
-      const ids = await resolveIds(args.ids, args.input === false);
+      const ids = await resolveIds(normalizeIdsArg(args.ids), args.input === false);
       if (ids.length === 0) {
         throw new CliError("Provide one or more arXiv IDs.", 2);
       }
@@ -290,13 +311,41 @@ const cli = yargs(hideBin(process.argv))
         .option("page-size", { type: "number", describe: "API page size (<=2000)" }),
     async (args) => {
       const { client, defaultDownloadDir } = await createClientContext(args);
-      const outputDir = args.outDir ?? defaultDownloadDir ?? process.cwd();
-      let ids = args.query ? [] : await resolveIds(args.ids, args.input === false);
+      const noInput = args.input === false || rawArgvIncludesFlag("--no-input");
+      const outputDirArg = normalizeOptionalString(args.outDir);
+      const outputDir = outputDirArg ? expandHomePath(outputDirArg) : (defaultDownloadDir ?? process.cwd());
+      const idsArg = normalizeIdsArg(args.ids);
+      const rawQueryArgv = rawArgvValue("--query");
+      const rawQueryAfterToken = rawArgvValueAfterToken("--query");
+      const queryOptionProvided = rawQueryArgv !== undefined || rawArgvIncludesFlag("--query");
+      if (rawQueryAfterToken !== undefined && rawQueryAfterToken.startsWith("--")) {
+        throw new CliError("Provide a non-empty query for --query.", 2, "E_USAGE");
+      }
+      const rawQuery = rawQueryArgv ?? (typeof args.query === "string" ? args.query : undefined);
+      if (
+        queryOptionProvided
+        && rawQuery !== "-"
+        && (!rawQuery || rawQuery.trim().length === 0)
+      ) {
+        throw new CliError("Provide a non-empty query for --query.", 2, "E_USAGE");
+      }
+
+      const hasQuery = queryOptionProvided;
+      const hasIds = Array.isArray(idsArg) && idsArg.length > 0;
+      if (hasQuery && hasIds) {
+        throw new CliError("Choose either --query or IDs, not both.", 2, "E_USAGE");
+      }
+
+      const query = hasQuery ? await resolveQuery(rawQuery, noInput) : undefined;
+      if (hasQuery && !query) {
+        throw new CliError("Provide a non-empty query for --query.", 2, "E_USAGE");
+      }
+      let ids = query ? [] : await resolveIds(idsArg, noInput);
       validatePagingArgs(args);
 
-      if (args.query) {
+      if (query) {
         const result = await client.search({
-          searchQuery: args.query,
+          searchQuery: query,
           maxResults: args.maxResults,
           pageSize: args.pageSize
         });
@@ -313,8 +362,8 @@ const cli = yargs(hideBin(process.argv))
       if (format === "pdf") {
         if (args.requireLicense) {
           const metadata = await client.fetchByIds(ids);
-          const entryMap = mapEntriesByBaseId(metadata.entries);
-          const filtered = filterIdsByLicense(ids, entryMap);
+          const entryLookup = createEntryLookup(metadata.entries);
+          const filtered = filterIdsByLicense(ids, entryLookup);
           results = [...filtered.failed];
           if (filtered.allowed.length > 0) {
             const downloaded = await client.download(filtered.allowed, outputDir, args.overwrite);
@@ -325,9 +374,9 @@ const cli = yargs(hideBin(process.argv))
         }
       } else {
         const metadata = await client.fetchByIds(ids);
-        const entryMap = mapEntriesByBaseId(metadata.entries);
+        const entryLookup = createEntryLookup(metadata.entries);
         if (args.requireLicense) {
-          const filtered = filterIdsByLicense(ids, entryMap);
+          const filtered = filterIdsByLicense(ids, entryLookup);
           results = results.concat(filtered.failed);
           ids = filtered.allowed;
         }
@@ -336,7 +385,7 @@ const cli = yargs(hideBin(process.argv))
           ids,
           outputDir,
           overwrite: args.overwrite,
-          entryMap,
+          entryLookup,
           format: format === "md" ? "md" : "json",
           keepPdf: args.keepPdf
         });
@@ -368,10 +417,11 @@ const cli = yargs(hideBin(process.argv))
     "Show effective configuration",
     () => {},
     async (args) => {
-      const { config, configPaths } = await loadConfig(process.cwd(), args.config);
-      const env = envConfig();
-      const flags = resolveFlagConfig(args);
-      const resolved = { ...config, ...env, ...flags };
+      const { client, configPaths, defaultDownloadDir } = await createClientContext(args);
+      const resolved = { ...client.getConfig() } as Record<string, unknown>;
+      if (typeof defaultDownloadDir === "string" && defaultDownloadDir.length > 0) {
+        resolved.defaultDownloadDir = defaultDownloadDir;
+      }
 
       await outputResult({
         args,
@@ -385,17 +435,51 @@ const cli = yargs(hideBin(process.argv))
     }
   )
   .command(
-    "help [command]",
+    "help [command..]",
     "Show help for a command",
-    (y) => y.positional("command", { type: "string", describe: "Command name" }),
+    (y) => y.positional("command", { type: "string", array: true, describe: "Command name" }),
     async (args) => {
-      if (args.command) {
-        const target = String(args.command);
+      const commandTokens = Array.isArray(args.command)
+        ? args.command.map((token) => String(token))
+        : [];
+
+      if (commandTokens.length > 0) {
+        const target = commandTokens[0] ?? "";
         if (target === "help") {
           cli.showHelp();
           return;
         }
-        cli.parse([target, "--help"]);
+        const knownCommands = ["search", "fetch", "download", "config", "help", "urls", "categories"];
+        if (!knownCommands.includes(target)) {
+          throw new CliError(`Unknown command: ${target}`, 2, "E_USAGE");
+        }
+        if (target !== "categories" && commandTokens.length > 1) {
+          throw new CliError(`Unknown command path: ${commandTokens.join(" ")}`, 2, "E_USAGE");
+        }
+        if (target === "categories" && commandTokens.length > 1) {
+          if (commandTokens.length > 2) {
+            throw new CliError(`Unknown command path: ${commandTokens.join(" ")}`, 2, "E_USAGE");
+          }
+          const knownCategorySubcommands = ["list", "tree", "search", "show"];
+          const subcommand = commandTokens[1] ?? "";
+          if (!knownCategorySubcommands.includes(subcommand)) {
+            throw new CliError(`Unknown command path: ${commandTokens.join(" ")}`, 2, "E_USAGE");
+          }
+        }
+        const scriptPath = process.argv[1] ?? "";
+        const childArgs = scriptPath.endsWith(".ts")
+          ? ["--import", "tsx", scriptPath, ...commandTokens, "--help"]
+          : [scriptPath, ...commandTokens, "--help"];
+        const result = spawnSync(process.execPath, childArgs, { encoding: "utf8" });
+        if (result.stdout) {
+          process.stdout.write(result.stdout);
+        }
+        if (result.stderr) {
+          process.stderr.write(result.stderr);
+        }
+        if (typeof result.status === "number" && result.status !== 0) {
+          process.exit(result.status);
+        }
         return;
       }
       cli.showHelp();
@@ -431,9 +515,17 @@ const cli = yargs(hideBin(process.argv))
           describe: "Sort order"
         }),
     async (args) => {
-      const hasIdsArg = Array.isArray(args.ids) && args.ids.length > 0;
-      const ids = hasIdsArg ? await resolveIds(args.ids, args.input === false) : [];
+      const idsOptionRequested = rawArgvIncludesFlag("--ids");
+      const idsArg = normalizeIdsArg(args.ids);
+      const rawIds = idsOptionRequested && (!idsArg || idsArg.length === 0) ? ["-"] : idsArg;
+      const hasIdsArg = Array.isArray(rawIds) && rawIds.length > 0;
+      const ids = hasIdsArg ? await resolveIds(rawIds, args.input === false) : [];
       const hasIds = ids.length > 0;
+
+      if (hasIds && typeof args.query === "string" && args.query.trim() && args.query.trim() !== "-") {
+        throw new CliError("Choose either a search query or --ids, not both.", 2, "E_USAGE");
+      }
+
       const query = hasIds ? "" : await resolveQuery(args.query, args.input === false);
 
       if (!hasIds && !query) {
@@ -608,23 +700,65 @@ const cli = yargs(hideBin(process.argv))
 
 const splitIdTokens = (values: string[]): string[] =>
   values
-    .flatMap((value) => value.split(","))
+    .flatMap((value) => value.split(/[\s,]+/))
     .map((value) => value.trim())
     .filter(Boolean);
 
-const resolveIds = async (ids: string[] | undefined, noInput?: boolean): Promise<string[]> => {
-  const list = splitIdTokens((ids ?? []).filter(Boolean));
-  if (list.length > 0) {
-    return list;
+const normalizeIdsArg = (value: unknown): string[] | undefined => {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item));
   }
+  if (typeof value === "string" && value.trim()) {
+    return [value];
+  }
+  return undefined;
+};
+
+const resolveIds = async (ids: string[] | undefined, noInput?: boolean): Promise<string[]> => {
+  const provided = splitIdTokens((ids ?? []).filter(Boolean));
+  const wantsStdin = provided.length === 0 || provided.includes("-");
+
+  if (!wantsStdin) {
+    return provided;
+  }
+
   if (noInput) {
     throw new CliError("Provide arXiv IDs; stdin disabled by --no-input.", 2, "E_USAGE");
   }
   if (process.stdin.isTTY) {
     throw new CliError("Provide arXiv IDs or pipe them via stdin.", 2, "E_USAGE");
   }
+
   const lines = await readLines();
-  return splitIdTokens(lines);
+  const fromStdin = splitIdTokens(lines);
+  return provided.filter((id) => id !== "-").concat(fromStdin);
+};
+
+const rawArgvIncludesFlag = (flag: string): boolean =>
+  process.argv.some((arg) => arg === flag || arg.startsWith(`${flag}=`));
+
+const rawArgvValue = (flag: string): string | undefined => {
+  for (let index = 0; index < process.argv.length; index += 1) {
+    const current = process.argv[index];
+    if (!current) continue;
+    if (current === flag) {
+      return process.argv[index + 1];
+    }
+    if (current.startsWith(`${flag}=`)) {
+      return current.slice(flag.length + 1);
+    }
+  }
+  return undefined;
+};
+
+const rawArgvValueAfterToken = (flag: string): string | undefined => {
+  for (let index = 0; index < process.argv.length; index += 1) {
+    const current = process.argv[index];
+    if (current === flag) {
+      return process.argv[index + 1];
+    }
+  }
+  return undefined;
 };
 
 const resolveQuery = async (query: string | undefined, noInput?: boolean): Promise<string> => {
@@ -638,7 +772,7 @@ const resolveQuery = async (query: string | undefined, noInput?: boolean): Promi
     const input = await readStdin();
     return input.trim();
   }
-  return query;
+  return query.trim();
 };
 
 const validatePagingArgs = (args: { pageSize?: number; maxResults?: number; start?: number }) => {
@@ -668,31 +802,62 @@ const loadTaxonomy = async (args: any): Promise<TaxonomyResult> => {
 };
 
 const normalizeArxivId = (id: string): string =>
-  id.replace(/\s+/g, "").replace(/\.pdf$/i, "").replace(/v\d+$/i, "");
+  id
+    .trim()
+    .replace(/^arxiv:/i, "")
+    .replace(/^https?:\/\/(?:www\.)?arxiv\.org\/(?:abs|pdf)\//i, "")
+    .replace(/[?#].*$/, "")
+    .replace(/\.pdf$/i, "")
+    .replace(/\/+$/, "")
+    .replace(/^\/+/, "")
+    .replace(/\s+/g, "");
 
-const mapEntriesByBaseId = (entries: ArxivEntry[]) => {
-  const map = new Map<string, ArxivEntry>();
+const toSafeFileStem = (id: string): string => {
+  const stem = normalizeArxivId(id).replace(/[^A-Za-z0-9._-]/g, "_");
+  return stem || "paper";
+};
+
+const normalizeArxivBaseId = (id: string): string =>
+  normalizeArxivId(id).replace(/v\d+$/i, "");
+
+type EntryLookup = {
+  byId: Map<string, ArxivEntry>;
+  byBaseId: Map<string, ArxivEntry>;
+};
+
+const createEntryLookup = (entries: ArxivEntry[]): EntryLookup => {
+  const byId = new Map<string, ArxivEntry>();
+  const byBaseId = new Map<string, ArxivEntry>();
   for (const entry of entries) {
-    const baseId = normalizeArxivId(entry.id);
-    if (!map.has(baseId)) {
-      map.set(baseId, entry);
+    const normalizedId = normalizeArxivId(entry.id);
+    const baseId = normalizeArxivBaseId(entry.id);
+    if (!byId.has(normalizedId)) {
+      byId.set(normalizedId, entry);
+    }
+    if (!byBaseId.has(baseId)) {
+      byBaseId.set(baseId, entry);
     }
   }
-  return map;
+  return { byId, byBaseId };
+};
+
+const resolveEntry = (rawId: string, lookup: EntryLookup): ArxivEntry | undefined => {
+  const normalizedId = normalizeArxivId(rawId);
+  return lookup.byId.get(normalizedId) ?? lookup.byBaseId.get(normalizeArxivBaseId(rawId));
 };
 
 const filterIdsByLicense = (
   ids: string[],
-  entryMap: Map<string, ArxivEntry>
+  lookup: EntryLookup
 ) => {
   const failed: { id: string; path: string; status: string; error?: string }[] = [];
   const allowed: string[] = [];
   for (const rawId of ids) {
-    const safeId = normalizeArxivId(rawId);
-    const entry = entryMap.get(safeId);
+    const normalizedId = normalizeArxivId(rawId);
+    const entry = resolveEntry(rawId, lookup);
     if (!entry || !hasLicenseMetadata(entry)) {
       failed.push({
-        id: safeId,
+        id: normalizedId,
         path: "",
         status: "failed",
         error: "License metadata missing"
@@ -709,7 +874,7 @@ const downloadAsTextFormats = async ({
   ids,
   outputDir,
   overwrite,
-  entryMap,
+  entryLookup,
   format,
   keepPdf
 }: {
@@ -717,29 +882,41 @@ const downloadAsTextFormats = async ({
   ids: string[];
   outputDir: string;
   overwrite: boolean;
-  entryMap: Map<string, ArxivEntry>;
+  entryLookup: EntryLookup;
   format: "md" | "json";
   keepPdf: boolean;
 }): Promise<{ id: string; path: string; status: string; error?: string }[]> => {
   const results: { id: string; path: string; status: string; error?: string }[] = [];
   for (const rawId of ids) {
-    const safeId = normalizeArxivId(rawId);
-    const entry = entryMap.get(safeId);
+    const normalizedId = normalizeArxivId(rawId);
+    const fileStem = toSafeFileStem(rawId);
+    const entry = resolveEntry(rawId, entryLookup);
     if (!entry) {
-      results.push({ id: safeId, path: "", status: "failed", error: "Metadata not found" });
+      results.push({ id: normalizedId, path: "", status: "failed", error: "Metadata not found" });
       continue;
     }
 
-    const filename = `${safeId}.${format}`;
+    const filename = `${fileStem}.${format}`;
     const outputPath = resolve(outputDir, filename);
+    const pdfPath = resolve(outputDir, `${fileStem}.pdf`);
     try {
       const exists = await fileExists(outputPath);
       if (exists && !overwrite) {
-        results.push({ id: safeId, path: outputPath, status: "skipped" });
+        if (keepPdf) {
+          const pdfExists = await fileExists(pdfPath);
+          if (!pdfExists) {
+            const pdfBuffer = await client.downloadPdfBuffer(entry.id);
+            await mkdir(dirname(pdfPath), { recursive: true });
+            await writeFile(pdfPath, pdfBuffer);
+          }
+        }
+        results.push({ id: normalizedId, path: outputPath, status: "skipped" });
         continue;
       }
 
       const pdfBuffer = await client.downloadPdfBuffer(entry.id);
+      const pdfBufferForWrite = keepPdf ? Uint8Array.from(pdfBuffer) : undefined;
+
       const text = await extractPdfText(pdfBuffer);
 
       const payload = format === "md"
@@ -749,18 +926,17 @@ const downloadAsTextFormats = async ({
       await mkdir(dirname(outputPath), { recursive: true });
       await writeFile(outputPath, payload, "utf8");
 
-      if (keepPdf) {
-        const pdfPath = resolve(outputDir, `${safeId}.pdf`);
+      if (keepPdf && pdfBufferForWrite) {
         const pdfExists = await fileExists(pdfPath);
         if (!pdfExists || overwrite) {
-          await writeFile(pdfPath, pdfBuffer);
+          await writeFile(pdfPath, pdfBufferForWrite);
         }
       }
 
-      results.push({ id: safeId, path: outputPath, status: "downloaded" });
+      results.push({ id: normalizedId, path: outputPath, status: "downloaded" });
     } catch (error) {
       results.push({
-        id: safeId,
+        id: normalizedId,
         path: outputPath,
         status: "failed",
         error: error instanceof Error ? error.message : String(error)
@@ -846,6 +1022,54 @@ const fileExists = async (path: string): Promise<boolean> => {
   }
 };
 
+const mergeDefined = <T extends Record<string, unknown>>(
+  ...sources: Partial<T>[]
+): Partial<T> => {
+  const merged: Partial<T> = {};
+  for (const source of sources) {
+    for (const [key, value] of Object.entries(source)) {
+      if (value !== undefined) {
+        (merged as Record<string, unknown>)[key] = value;
+      }
+    }
+  }
+  return merged;
+};
+
+const normalizeOptionalString = (value: unknown): string | undefined => {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const normalized = value.trim();
+  return normalized || undefined;
+};
+
+const expandHomePath = (path: string): string => {
+  if (path === "~") {
+    return homedir();
+  }
+  if (path.startsWith("~/")) {
+    return resolve(homedir(), path.slice(2));
+  }
+  return path;
+};
+
+const normalizeOptionalUrl = (value: unknown, label: string): string | undefined => {
+  const normalized = normalizeOptionalString(value);
+  if (!normalized) {
+    return undefined;
+  }
+  try {
+    const parsed = new URL(normalized);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      throw new Error("invalid_scheme");
+    }
+    return normalized;
+  } catch {
+    throw new CliError(`Invalid ${label} (expected http(s) URL): ${String(value)}`, 2, "E_VALIDATION");
+  }
+};
+
 const resolveFlagConfig = (args: any) => ({
   apiBaseUrl: args.apiBaseUrl,
   pdfBaseUrl: args.pdfBaseUrl,
@@ -863,41 +1087,55 @@ const resolveFlagConfig = (args: any) => ({
 });
 
 const createClientContext = async (args: any) => {
-  const { config } = await loadConfig(process.cwd(), args.config);
+  const { config, configPaths } = await loadConfig(process.cwd(), args.config);
   const env = envConfig();
   const flags = resolveFlagConfig(args);
 
-  const merged = { ...config, ...env, ...flags };
+  const merged = mergeDefined(config, env, flags);
 
   const contact = args.contact ?? process.env.RSEARCH_CONTACT_EMAIL;
-  const userAgent = resolveUserAgent(merged.userAgent, contact);
+  const userAgent = resolveUserAgent(normalizeOptionalString(merged.userAgent), contact);
+  const apiBaseUrl = normalizeOptionalUrl(merged.apiBaseUrl, "api-base-url");
+  const pdfBaseUrl = normalizeOptionalUrl(merged.pdfBaseUrl, "pdf-base-url");
+  const cacheDirRaw = normalizeOptionalString(merged.cacheDir);
+  const defaultDownloadDirRaw = normalizeOptionalString(merged.defaultDownloadDir);
+  const cacheDir = cacheDirRaw ? expandHomePath(cacheDirRaw) : undefined;
+  const defaultDownloadDir = defaultDownloadDirRaw ? expandHomePath(defaultDownloadDirRaw) : undefined;
 
   const clientConfig: Record<string, unknown> = {
     userAgent
   };
 
-  if (merged.apiBaseUrl) clientConfig.apiBaseUrl = merged.apiBaseUrl;
-  if (merged.pdfBaseUrl) clientConfig.pdfBaseUrl = merged.pdfBaseUrl;
+  if (apiBaseUrl) clientConfig.apiBaseUrl = apiBaseUrl;
+  if (pdfBaseUrl) clientConfig.pdfBaseUrl = pdfBaseUrl;
   if (typeof merged.timeoutMs === "number") clientConfig.timeoutMs = merged.timeoutMs;
   if (typeof merged.minIntervalMs === "number") clientConfig.minIntervalMs = merged.minIntervalMs;
   if (typeof merged.maxRetries === "number") clientConfig.maxRetries = merged.maxRetries;
   if (typeof merged.retryBaseDelayMs === "number") clientConfig.retryBaseDelayMs = merged.retryBaseDelayMs;
   if (typeof merged.cache === "boolean") clientConfig.cache = merged.cache;
-  if (typeof merged.cacheDir === "string") clientConfig.cacheDir = merged.cacheDir;
+  if (cacheDir) clientConfig.cacheDir = cacheDir;
   if (typeof merged.cacheTtlMs === "number") clientConfig.cacheTtlMs = merged.cacheTtlMs;
   if (typeof merged.pageSize === "number") clientConfig.pageSize = merged.pageSize;
   if (typeof merged.debug === "boolean") clientConfig.debug = merged.debug;
 
   return {
     client: new ArxivClient(clientConfig as any),
-    defaultDownloadDir: merged.defaultDownloadDir
+    defaultDownloadDir,
+    configPaths
   };
 };
 
 const resolveUserAgent = (userAgent: string | undefined, contact?: string) => {
-  if (userAgent) return userAgent;
+  const trimmedUserAgent = typeof userAgent === "string" ? userAgent.trim() : "";
+  if (trimmedUserAgent) return trimmedUserAgent;
   if (!contact) return `rsearch/${VERSION}`;
-  const contactValue = contact.includes("@") ? `mailto:${contact}` : contact;
+  const trimmedContact = contact.trim();
+  if (!trimmedContact) return `rsearch/${VERSION}`;
+  const contactValue = trimmedContact.toLowerCase().startsWith("mailto:")
+    ? trimmedContact
+    : trimmedContact.includes("@")
+      ? `mailto:${trimmedContact}`
+      : trimmedContact;
   return `rsearch/${VERSION} (${contactValue})`;
 };
 

@@ -67,12 +67,38 @@ const defaultConfig: TaxonomyConfig = {
   minIntervalMs: 3000
 };
 
-let cachedHtml: string | null = null;
-let cachedResult: TaxonomyResult | null = null;
+const cachedResults = new Map<string, TaxonomyResult>();
+
+const cloneTaxonomy = (taxonomy: TaxonomyResult): TaxonomyResult => ({
+  sourceUrl: taxonomy.sourceUrl,
+  groups: taxonomy.groups.map((group) => ({
+    name: group.name,
+    categories: group.categories.map((category) => ({ ...category }))
+  })),
+  categories: taxonomy.categories.map((category) => ({ ...category }))
+});
 
 const parseCategoryHeading = (text: string): { id: string; name: string } | null => {
   const trimmed = text.replace(/\s+/g, " ").trim();
   if (!trimmed) return null;
+  if (trimmed.toLowerCase().startsWith("category name")) return null;
+
+  const isCategoryId = (value: string): boolean =>
+    /^[A-Za-z0-9]+(?:[.-][A-Za-z0-9]+)+$/.test(value);
+
+  const flexibleMatch = trimmed.match(/^(.+?)\s*\((.+)\)$/);
+  if (flexibleMatch) {
+    const left = flexibleMatch[1].trim();
+    const right = flexibleMatch[2].trim();
+    const leftLooksLikeId = isCategoryId(left);
+    const rightLooksLikeId = isCategoryId(right);
+    if (leftLooksLikeId && !rightLooksLikeId) {
+      return { id: left, name: right };
+    }
+    if (!leftLooksLikeId && rightLooksLikeId) {
+      return { id: right, name: left };
+    }
+  }
 
   const match = trimmed.match(/^([A-Za-z0-9.\-]+)\s*\((.+)\)$/);
   if (match) {
@@ -105,7 +131,13 @@ const normalizeGroupName = (text: string): string =>
  */
 export const parseTaxonomyHtml = (html: string, sourceUrl: string): TaxonomyResult => {
   const $ = load(html);
-  const scope = $("#content").length ? $("#content") : $("main").length ? $("main") : $("body");
+  const scope = $("#category_taxonomy_list").length
+    ? $("#category_taxonomy_list")
+    : $("#content").length
+      ? $("#content")
+      : $("main").length
+        ? $("main")
+        : $("body");
 
   const groups = new Map<string, TaxonomyCategory[]>();
   let currentGroup = "";
@@ -196,14 +228,13 @@ export const fetchTaxonomy = async (
   options: { refresh?: boolean } = {}
 ): Promise<TaxonomyResult> => {
   const resolved = { ...defaultConfig, ...config };
+  const cacheKey = resolved.taxonomyUrl;
 
-  if (!options.refresh && cachedResult) {
-    return cachedResult;
-  }
-
-  if (!options.refresh && cachedHtml) {
-    cachedResult = parseTaxonomyHtml(cachedHtml, resolved.taxonomyUrl);
-    return cachedResult;
+  if (!options.refresh) {
+    const cached = cachedResults.get(cacheKey);
+    if (cached) {
+      return cloneTaxonomy(cached);
+    }
   }
 
   const limiter = new RateLimiter(resolved.minIntervalMs);
@@ -212,22 +243,25 @@ export const fetchTaxonomy = async (
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), resolved.timeoutMs);
 
-  const response = await fetch(resolved.taxonomyUrl, {
-    headers: {
-      "User-Agent": resolved.userAgent,
-      Accept: "text/html"
-    },
-    signal: controller.signal
-  });
-
-  clearTimeout(timeout);
+  let response: Response;
+  try {
+    response = await fetch(resolved.taxonomyUrl, {
+      headers: {
+        "User-Agent": resolved.userAgent,
+        Accept: "text/html"
+      },
+      signal: controller.signal
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!response.ok) {
     throw new Error(`Failed to fetch taxonomy (${response.status} ${response.statusText})`);
   }
 
   const html = await response.text();
-  cachedHtml = html;
-  cachedResult = parseTaxonomyHtml(html, resolved.taxonomyUrl);
-  return cachedResult;
+  const parsed = parseTaxonomyHtml(html, resolved.taxonomyUrl);
+  cachedResults.set(cacheKey, parsed);
+  return cloneTaxonomy(parsed);
 };

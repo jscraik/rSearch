@@ -74,6 +74,84 @@ const defaultConfig: ArxivClientConfig = {
   debug: false
 };
 
+const normalizeArxivId = (id: string): string =>
+  id
+    .trim()
+    .replace(/^arxiv:/i, "")
+    .replace(/^https?:\/\/(?:www\.)?arxiv\.org\/(?:abs|pdf)\//i, "")
+    .replace(/[?#].*$/, "")
+    .replace(/\.pdf$/i, "")
+    .replace(/\/+$/, "")
+    .replace(/^\/+/, "")
+    .replace(/\s+/g, "");
+
+const parseHttpUrl = (label: string, value: string): URL => {
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new Error(`${label} must be a valid URL.`);
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw new Error(`${label} must use http or https.`);
+  }
+  return parsed;
+};
+
+const normalizeApiBaseUrl = (value: string): string =>
+  parseHttpUrl("apiBaseUrl", value).toString();
+
+const normalizePdfBaseUrl = (value: string): string => {
+  const parsed = parseHttpUrl("pdfBaseUrl", value);
+  if (!parsed.pathname.endsWith("/")) {
+    parsed.pathname = `${parsed.pathname}/`;
+  }
+  return parsed.toString();
+};
+
+const buildPdfUrl = (baseUrl: string, id: string): string => {
+  const base = normalizePdfBaseUrl(baseUrl);
+  return new URL(id, base).toString();
+};
+
+const assertIntegerConfig = (
+  label: string,
+  value: number,
+  { min, allowZero }: { min?: number; allowZero?: boolean } = {}
+): void => {
+  if (!Number.isFinite(value) || !Number.isInteger(value)) {
+    throw new Error(`${label} must be an integer.`);
+  }
+
+  if (allowZero && value === 0) {
+    return;
+  }
+
+  if (typeof min === "number" && value < min) {
+    if (min === 0) {
+      throw new Error(`${label} must be a non-negative integer.`);
+    }
+    throw new Error(`${label} must be an integer >= ${min}.`);
+  }
+
+  if (!allowZero && value <= 0) {
+    throw new Error(`${label} must be a positive integer.`);
+  }
+};
+
+const toSafeFileStem = (id: string): string => {
+  const stem = normalizeArxivId(id).replace(/[^A-Za-z0-9._-]/g, "_");
+  return stem || "paper";
+};
+
+const normalizeRequiredIds = (ids: string[]): string[] => {
+  const normalized = ids.map(normalizeArxivId);
+  if (normalized.some((id) => !id)) {
+    throw new Error("Invalid arXiv ID in id list.");
+  }
+  return normalized;
+};
+
 /**
  * arXiv API client for searching, fetching metadata, and downloading papers.
  *
@@ -115,6 +193,13 @@ export class ArxivClient {
    */
   constructor(config: Partial<ArxivClientConfig> = {}) {
     this.config = { ...defaultConfig, ...config };
+    this.config.apiBaseUrl = normalizeApiBaseUrl(this.config.apiBaseUrl);
+    this.config.pdfBaseUrl = normalizePdfBaseUrl(this.config.pdfBaseUrl);
+    assertIntegerConfig("timeoutMs", this.config.timeoutMs);
+    assertIntegerConfig("minIntervalMs", this.config.minIntervalMs, { min: 0, allowZero: true });
+    assertIntegerConfig("maxRetries", this.config.maxRetries, { min: 0, allowZero: true });
+    assertIntegerConfig("retryBaseDelayMs", this.config.retryBaseDelayMs, { min: 0, allowZero: true });
+    assertIntegerConfig("pageSize", this.config.pageSize, { min: 1 });
     this.limiter = new RateLimiter(this.config.minIntervalMs);
   }
 
@@ -161,6 +246,9 @@ export class ArxivClient {
    */
   async search(options: ArxivSearchOptions): Promise<ArxivSearchResult> {
     const requestedPageSize = options.pageSize ?? this.config.pageSize;
+    if (!Number.isFinite(requestedPageSize) || !Number.isInteger(requestedPageSize) || requestedPageSize < 1) {
+      throw new Error("pageSize must be a positive integer.");
+    }
     if (requestedPageSize > MAX_PAGE_SIZE) {
       throw new Error(`pageSize cannot exceed ${MAX_PAGE_SIZE}.`);
     }
@@ -168,8 +256,8 @@ export class ArxivClient {
     const pageSize = requestedPageSize || DEFAULT_PAGE_SIZE;
     const maxResults = options.maxResults ?? pageSize;
 
-    if (maxResults < 1) {
-      throw new Error("maxResults must be >= 1");
+    if (!Number.isFinite(maxResults) || !Number.isInteger(maxResults) || maxResults < 1) {
+      throw new Error("maxResults must be a positive integer.");
     }
 
     if (maxResults > MAX_TOTAL_RESULTS) {
@@ -177,15 +265,16 @@ export class ArxivClient {
     }
 
     const start = options.start ?? 0;
-    if (start < 0) {
-      throw new Error("start must be >= 0");
+    if (!Number.isFinite(start) || !Number.isInteger(start) || start < 0) {
+      throw new Error("start must be a non-negative integer.");
     }
 
     const fetchAll = options.maxResults !== undefined && maxResults > pageSize;
 
     const entries: ArxivEntry[] = [];
     let totalResults = 0;
-    let startIndex = start;
+    let resultStartIndex = start;
+    let requestStartIndex = start;
     let itemsPerPage = pageSize;
     let remaining = maxResults;
 
@@ -193,7 +282,7 @@ export class ArxivClient {
       const batchSize = Math.min(pageSize, remaining);
       const { url } = buildQuery(this.config.apiBaseUrl, {
         ...options,
-        start: startIndex,
+        start: requestStartIndex,
         maxResults: batchSize
       });
 
@@ -202,7 +291,7 @@ export class ArxivClient {
 
       if (entries.length === 0) {
         totalResults = parsed.totalResults;
-        startIndex = parsed.startIndex;
+        resultStartIndex = parsed.startIndex;
         itemsPerPage = parsed.itemsPerPage;
       }
 
@@ -216,14 +305,18 @@ export class ArxivClient {
         break;
       }
 
+      if (requestStartIndex + parsed.entries.length >= parsed.totalResults) {
+        break;
+      }
+
       remaining -= parsed.entries.length;
-      startIndex += parsed.entries.length;
+      requestStartIndex += parsed.entries.length;
     }
 
     return {
       query: options.searchQuery ?? "",
       totalResults,
-      startIndex,
+      startIndex: resultStartIndex,
       itemsPerPage,
       entries
     };
@@ -245,7 +338,41 @@ export class ArxivClient {
    * ```
    */
   async fetchByIds(ids: string[], options: Omit<ArxivSearchOptions, "idList"> = {}) {
-    return this.search({ ...options, idList: ids });
+    if (ids.length === 0) {
+      const requestedPageSize = options.pageSize ?? this.config.pageSize;
+      if (!Number.isFinite(requestedPageSize) || !Number.isInteger(requestedPageSize) || requestedPageSize < 1) {
+        throw new Error("pageSize must be a positive integer.");
+      }
+      if (requestedPageSize > MAX_PAGE_SIZE) {
+        throw new Error(`pageSize cannot exceed ${MAX_PAGE_SIZE}.`);
+      }
+
+      if (options.maxResults !== undefined) {
+        if (!Number.isFinite(options.maxResults) || !Number.isInteger(options.maxResults) || options.maxResults < 1) {
+          throw new Error("maxResults must be a positive integer.");
+        }
+        if (options.maxResults > MAX_TOTAL_RESULTS) {
+          throw new Error(`maxResults cannot exceed ${MAX_TOTAL_RESULTS}.`);
+        }
+      }
+
+      const start = options.start ?? 0;
+      if (!Number.isFinite(start) || !Number.isInteger(start) || start < 0) {
+        throw new Error("start must be a non-negative integer.");
+      }
+
+      return {
+        query: "",
+        totalResults: 0,
+        startIndex: start,
+        itemsPerPage: 0,
+        entries: []
+      };
+    }
+
+    const normalizedIds = normalizeRequiredIds(ids);
+    const maxResults = options.maxResults ?? normalizedIds.length;
+    return this.search({ ...options, idList: normalizedIds, maxResults });
   }
 
   /**
@@ -290,26 +417,35 @@ export class ArxivClient {
     }[] = [];
 
     for (const id of ids) {
-      const safeId = id.replace(/\s+/g, "").replace(/\.pdf$/i, "");
-      const filename = `${safeId}.pdf`;
+      const normalizedId = normalizeArxivId(id);
+      const filename = `${toSafeFileStem(id)}.pdf`;
       const outputPath = resolve(outputDir, filename);
+      if (!normalizedId) {
+        results.push({
+          id: normalizedId,
+          path: outputPath,
+          status: "failed",
+          error: "Invalid arXiv ID"
+        });
+        continue;
+      }
 
       try {
         const exists = await fileExists(outputPath);
         if (exists && !overwrite) {
-          results.push({ id: safeId, path: outputPath, status: "skipped" });
+          results.push({ id: normalizedId, path: outputPath, status: "skipped" });
           continue;
         }
 
-        const pdfUrl = `${this.config.pdfBaseUrl}${safeId}`;
+        const pdfUrl = buildPdfUrl(this.config.pdfBaseUrl, normalizedId);
 
         const response = await this.requestBinary(pdfUrl);
         await mkdir(dirname(outputPath), { recursive: true });
         await writeFile(outputPath, response);
-        results.push({ id: safeId, path: outputPath, status: "downloaded" });
+        results.push({ id: normalizedId, path: outputPath, status: "downloaded" });
       } catch (error) {
         results.push({
-          id: safeId,
+          id: normalizedId,
           path: outputPath,
           status: "failed",
           error: error instanceof Error ? error.message : String(error)
@@ -337,8 +473,11 @@ export class ArxivClient {
    * Useful for in-memory PDF processing without writing to disk.
    */
   async downloadPdfBuffer(id: string): Promise<Uint8Array> {
-    const safeId = id.replace(/\s+/g, "").replace(/\.pdf$/i, "");
-    const pdfUrl = `${this.config.pdfBaseUrl}${safeId}`;
+    const normalizedId = normalizeArxivId(id);
+    if (!normalizedId) {
+      throw new Error("Invalid arXiv ID.");
+    }
+    const pdfUrl = buildPdfUrl(this.config.pdfBaseUrl, normalizedId);
     return this.requestBinary(pdfUrl);
   }
 
@@ -465,7 +604,8 @@ class ResponseError extends Error {
   }
 }
 
-const shouldRetry = (status: number): boolean => status === 429 || status >= 500;
+const shouldRetry = (status: number): boolean =>
+  status === 408 || status === 429 || status >= 500;
 
 const isRetryableError = (error: unknown): boolean => {
   if (error instanceof ResponseError) {

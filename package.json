@@ -35,7 +35,11 @@
     "postversion": "git push && git push --tags",
     "changelog:update": "node scripts/update-changelog.js",
     "prepack": "npm run build",
-    "commit": "node scripts/commit.js"
+    "commit": "node scripts/commit.js",
+    "test:artifacts": "bash scripts/test-with-artifacts.sh all",
+    "test:artifacts:unit": "bash scripts/test-with-artifacts.sh unit",
+    "test:artifacts:integration": "bash scripts/test-with-artifacts.sh integration",
+    "test:artifacts:e2e": "bash scripts/test-with-artifacts.sh e2e"
   },
   "engines": {
     "node": ">=20.18.1"

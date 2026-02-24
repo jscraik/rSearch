@@ -58,11 +58,12 @@ export const buildQuery = (
   options: BuildQueryOptions
 ): BuiltQuery => {
   const params = new URLSearchParams();
+  const searchQuery = options.searchQuery?.trim();
 
   const idList = normalizeList(options.idList);
 
-  if (options.searchQuery) {
-    params.set("search_query", options.searchQuery);
+  if (searchQuery) {
+    params.set("search_query", searchQuery);
   }
 
   if (idList && idList.length > 0) {
@@ -74,15 +75,15 @@ export const buildQuery = (
   }
 
   if (typeof options.start === "number") {
-    if (options.start < 0) {
-      throw new Error("start must be >= 0");
+    if (!Number.isFinite(options.start) || !Number.isInteger(options.start) || options.start < 0) {
+      throw new Error("start must be a non-negative integer.");
     }
     params.set("start", String(options.start));
   }
 
   if (typeof options.maxResults === "number") {
-    if (options.maxResults < 1) {
-      throw new Error("maxResults must be >= 1");
+    if (!Number.isFinite(options.maxResults) || !Number.isInteger(options.maxResults) || options.maxResults < 1) {
+      throw new Error("maxResults must be a positive integer.");
     }
     params.set("max_results", String(options.maxResults));
   }
@@ -95,14 +96,30 @@ export const buildQuery = (
     params.set("sortOrder", options.sortOrder);
   }
 
-  const url = `${baseUrl}?${params.toString()}`;
-  return { url, query: params.toString(), params };
+  const mergedParams = new URLSearchParams();
+  let urlObject: URL;
+  try {
+    urlObject = new URL(baseUrl);
+  } catch {
+    throw new Error(`Invalid base URL: ${baseUrl}`);
+  }
+
+  for (const [key, value] of urlObject.searchParams.entries()) {
+    mergedParams.set(key, value);
+  }
+  for (const [key, value] of params.entries()) {
+    mergedParams.set(key, value);
+  }
+
+  const query = mergedParams.toString();
+  urlObject.search = query;
+  return { url: urlObject.toString(), query, params: mergedParams };
 };
 
 const normalizeList = (value: string[] | undefined): string[] | undefined => {
   if (!value) return undefined;
   return value
-    .flatMap((item) => item.split(/\s*,\s*/))
+    .flatMap((item) => item.split(/[\s,]+/))
     .map((item) => item.trim())
     .filter(Boolean);
 };

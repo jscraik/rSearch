@@ -1,8 +1,17 @@
 import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
-import { join, resolve } from "node:path";
+import { isAbsolute, join, resolve } from "node:path";
 import { z } from "zod";
 import { CliError } from "./utils/errors.js";
+
+const isHttpUrl = (value: string): boolean => {
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+};
 
 /**
  * Zod schema for validating rSearch configuration files.
@@ -10,8 +19,8 @@ import { CliError } from "./utils/errors.js";
  * @internal
  */
 const configSchema = z.object({
-  apiBaseUrl: z.string().url().optional(),
-  pdfBaseUrl: z.string().url().optional(),
+  apiBaseUrl: z.string().url().refine(isHttpUrl, "Must be an http(s) URL").optional(),
+  pdfBaseUrl: z.string().url().refine(isHttpUrl, "Must be an http(s) URL").optional(),
   userAgent: z.string().min(1).optional(),
   timeoutMs: z.number().int().positive().optional(),
   minIntervalMs: z.number().int().positive().optional(),
@@ -78,8 +87,18 @@ const readConfigFile = async (path: string, required: boolean): Promise<FileConf
 
 const xdgConfigHome = () =>
   process.env.XDG_CONFIG_HOME
-    ? resolve(process.env.XDG_CONFIG_HOME)
+    ? resolve(expandHomePath(process.env.XDG_CONFIG_HOME))
     : join(homedir(), ".config");
+
+const expandHomePath = (path: string): string => {
+  if (path === "~") {
+    return homedir();
+  }
+  if (path.startsWith("~/")) {
+    return join(homedir(), path.slice(2));
+  }
+  return path;
+};
 
 /**
  * Returns the default user config file path.
@@ -137,8 +156,13 @@ export const defaultProjectConfigPath = (cwd: string) =>
  * @public
  */
 export const loadConfig = async (cwd: string, explicitPath?: string): Promise<LoadedConfig> => {
+  const resolveExplicitPath = (path: string): string => {
+    const expanded = expandHomePath(path);
+    return isAbsolute(expanded) ? expanded : resolve(cwd, expanded);
+  };
+
   const paths = explicitPath
-    ? [resolve(explicitPath)]
+    ? [resolveExplicitPath(explicitPath)]
     : [defaultUserConfigPath(), defaultProjectConfigPath(cwd)];
 
   const configs: FileConfig[] = [];
@@ -159,16 +183,34 @@ export const loadConfig = async (cwd: string, explicitPath?: string): Promise<Lo
 };
 
 const parseBooleanEnv = (name: string, value: string | undefined): boolean | undefined => {
-  if (!value) return undefined;
-  const normalized = value.toLowerCase();
+  if (value === undefined) return undefined;
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return undefined;
   if (["1", "true", "yes"].includes(normalized)) return true;
   if (["0", "false", "no"].includes(normalized)) return false;
   throw new CliError(`Invalid ${name} (expected true/false): ${value}`, 2, "E_VALIDATION");
 };
 
+const parseOptionalStringEnv = (value: string | undefined): string | undefined => {
+  if (value === undefined) return undefined;
+  const normalized = value.trim();
+  return normalized || undefined;
+};
+
+const parseUrlEnv = (name: string, value: string | undefined): string | undefined => {
+  const normalized = parseOptionalStringEnv(value);
+  if (!normalized) return undefined;
+  if (!isHttpUrl(normalized)) {
+    throw new CliError(`Invalid ${name} (expected http(s) URL): ${value}`, 2, "E_VALIDATION");
+  }
+  return normalized;
+};
+
 const parsePositiveIntEnv = (name: string, value: string | undefined): number | undefined => {
-  if (!value) return undefined;
-  const parsed = Number(value);
+  if (value === undefined) return undefined;
+  const normalized = value.trim();
+  if (!normalized) return undefined;
+  const parsed = Number(normalized);
   if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed <= 0) {
     throw new CliError(`Invalid ${name} (expected positive integer): ${value}`, 2, "E_VALIDATION");
   }
@@ -176,8 +218,10 @@ const parsePositiveIntEnv = (name: string, value: string | undefined): number | 
 };
 
 const parseNonNegativeIntEnv = (name: string, value: string | undefined): number | undefined => {
-  if (!value) return undefined;
-  const parsed = Number(value);
+  if (value === undefined) return undefined;
+  const normalized = value.trim();
+  if (!normalized) return undefined;
+  const parsed = Number(normalized);
   if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed < 0) {
     throw new CliError(`Invalid ${name} (expected non-negative integer): ${value}`, 2, "E_VALIDATION");
   }
@@ -216,9 +260,9 @@ const parseNonNegativeIntEnv = (name: string, value: string | undefined): number
  * @public
  */
 export const envConfig = (): FileConfig => ({
-  apiBaseUrl: process.env.RSEARCH_API_BASE_URL,
-  pdfBaseUrl: process.env.RSEARCH_PDF_BASE_URL,
-  userAgent: process.env.RSEARCH_USER_AGENT,
+  apiBaseUrl: parseUrlEnv("RSEARCH_API_BASE_URL", process.env.RSEARCH_API_BASE_URL),
+  pdfBaseUrl: parseUrlEnv("RSEARCH_PDF_BASE_URL", process.env.RSEARCH_PDF_BASE_URL),
+  userAgent: parseOptionalStringEnv(process.env.RSEARCH_USER_AGENT),
   timeoutMs: parsePositiveIntEnv("RSEARCH_TIMEOUT_MS", process.env.RSEARCH_TIMEOUT_MS),
   minIntervalMs: parsePositiveIntEnv("RSEARCH_RATE_LIMIT_MS", process.env.RSEARCH_RATE_LIMIT_MS),
   maxRetries: parseNonNegativeIntEnv("RSEARCH_MAX_RETRIES", process.env.RSEARCH_MAX_RETRIES),
@@ -227,9 +271,9 @@ export const envConfig = (): FileConfig => ({
     process.env.RSEARCH_RETRY_BASE_DELAY_MS
   ),
   cache: parseBooleanEnv("RSEARCH_CACHE", process.env.RSEARCH_CACHE),
-  cacheDir: process.env.RSEARCH_CACHE_DIR,
+  cacheDir: parseOptionalStringEnv(process.env.RSEARCH_CACHE_DIR),
   cacheTtlMs: parsePositiveIntEnv("RSEARCH_CACHE_TTL_MS", process.env.RSEARCH_CACHE_TTL_MS),
   pageSize: parsePositiveIntEnv("RSEARCH_PAGE_SIZE", process.env.RSEARCH_PAGE_SIZE),
-  defaultDownloadDir: process.env.RSEARCH_DOWNLOAD_DIR,
+  defaultDownloadDir: parseOptionalStringEnv(process.env.RSEARCH_DOWNLOAD_DIR),
   debug: parseBooleanEnv("RSEARCH_DEBUG", process.env.RSEARCH_DEBUG)
 });
