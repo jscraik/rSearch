@@ -1,9 +1,9 @@
 # Claude AI Governance
 
-This repository contains governance rules for Claude Code and other AI assistants working in this codebase.
----
+Repository-wide instructions are canonical in `/Users/jamiecraik/dev/rsearch/AGENTS.md`.
+This file is reserved for Claude-specific AI artifact requirements.
 
-# AI Assistance Governance (Model A)
+## AI Assistance Governance (Model A)
 
 This project follows **Model A** AI artifact governance: prompts and session logs are committed artifacts in the repository.
 
@@ -12,8 +12,8 @@ This project follows **Model A** AI artifact governance: prompts and session log
 Claude must:
 
 1. **Save artifacts to `ai/` directory**:
-   - Final prompt → `ai/prompts/YYYY-MM-DD-<slug>.yaml`
-   - Session summary → `ai/sessions/YYYY-MM-DD-<slug>.json`
+   - Final prompt -> `ai/prompts/YYYY-MM-DD-<slug>.yaml`
+   - Session summary -> `ai/sessions/YYYY-MM-DD-<slug>.json`
 
 2. **Commit both files in the PR branch**:
    ```bash

@@ -17,7 +17,7 @@
 
 ## Security
 
-- `15116e8` [security](deps-dev): bump @types/node from 25.2.2 to 25.3.0 (#19)
+- `15116e8` security(deps-dev): bump @types/node from 25.2.2 to 25.3.0 (#19)
 
 ## Source
 
