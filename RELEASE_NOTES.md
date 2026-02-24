@@ -1,23 +1,30 @@
 # Release Notes
 
-**Repository:** `/Users/jamiecraik/dev/rsearch`
-**Since tag:** `v0.1.6`
-**Generated:** 2026-02-23 18:04 GMT
+**Repository:** `/Users/jamiecraik/dev/rsearch`  
+**Since tag:** `v0.1.6`  
+**Generated:** 2026-02-24 18:13 UTC
+
+## Table of Contents
+- [Breaking Changes](#breaking-changes)
+- [Security](#security)
+- [Chores](#chores)
+- [Source](#source)
 
 ## Breaking Changes
 
 - None detected from commit metadata.
 
-## Chores
-
-- `1021969` chore(deps): bump actions/setup-node from 4 to 6
-- `2d25bda` chore(deps): bump actions/github-script from 7 to 8 (#16)
-- `5c35bec` chore(deps): bump github/codeql-action from 3 to 4 (#15)
-- `e6ffc03` chore(deps): bump actions/checkout from 4 to 6 (#13)
-
 ## Security
 
-- `15116e8` security(deps-dev): bump @types/node from 25.2.2 to 25.3.0 (#19)
+- `15116e8` bump `@types/node` 25.2.2->25.3.0 (deps-dev).
+
+## Chores
+
+- `1021969` deps: bump `actions/setup-node` 4->6.
+- `2d25bda` deps: bump `actions/github-script` 7->8.
+- `5c35bec` deps: bump `github/codeql-action` 3->4.
+- `e6ffc03` deps: bump `actions/checkout` 4->6.
+- `15116e8` refresh dependency files and lockfile.
 
 ## Source
 
