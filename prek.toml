@@ -1,0 +1,40 @@
+# Prek configuration for rsearch.
+# Install: mise install cargo-prek (or cargo install prek)
+# Run: prek install && prek run --all-files
+
+[default_install_hook_types]
+pre_commit = true
+pre_push = true
+
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "lint-types"
+name = "Lint Types"
+entry = "npm run lint:types"
+language = "system"
+pass_filenames = false
+
+[[repos.hooks]]
+id = "typecheck"
+name = "Typecheck"
+entry = "npm run typecheck"
+language = "system"
+pass_filenames = false
+
+[[repos.hooks]]
+id = "test"
+name = "Tests"
+entry = "npm test"
+language = "system"
+pass_filenames = false
+stages = ["pre-push"]
+
+[[repos.hooks]]
+id = "build"
+name = "Build"
+entry = "npm run build"
+language = "system"
+pass_filenames = false
+stages = ["pre-push"]

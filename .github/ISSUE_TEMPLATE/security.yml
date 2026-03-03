@@ -1,0 +1,37 @@
+name: Security Vulnerability
+description: Report a potential security issue in rsearch
+labels: [security]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ⚠️ Do not publish sensitive exploit details in public.
+        Follow the private disclosure process in `SECURITY.md` when needed.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Vulnerability description
+    validations:
+      required: true
+
+  - type: textarea
+    id: affected
+    attributes:
+      label: Affected versions or commits
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Potential impact
+    validations:
+      required: true
+
+  - type: textarea
+    id: mitigation
+    attributes:
+      label: Suggested mitigation
+    validations:
+      required: false

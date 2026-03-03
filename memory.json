@@ -1,0 +1,31 @@
+{
+  "repo": "rsearch",
+  "session_id": "repo:rsearch:task:harness-optional-tailoring",
+  "preamble": {
+    "bootstrap": true,
+    "search": true
+  },
+  "entries": [
+    {
+      "level": "observation",
+      "content": "Harness optional components are tailored for the rsearch npm + TypeScript CLI workflow.",
+      "tags": [
+        "repo:rsearch",
+        "area:harness",
+        "area:project-setup",
+        "type:optional-components"
+      ],
+      "session_id": "repo:rsearch:task:harness-optional-tailoring",
+      "source": "harness init + project tailoring",
+      "observed_at": "2026-03-03T00:00:00.000Z"
+    }
+  ],
+  "closeout": {
+    "forjamie_updated": true,
+    "date": "2026-03-03T00:00:00.000Z"
+  },
+  "meta": {
+    "created_at": "2026-03-03T00:00:00.000Z",
+    "version": "1.0"
+  }
+}
