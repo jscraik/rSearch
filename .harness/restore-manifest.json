@@ -1,0 +1,85 @@
+{
+  "harnessVersion": "0.5.7",
+  "files": [
+    {
+      "path": "harness.contract.json",
+      "action": "created"
+    },
+    {
+      "path": "memory.json",
+      "action": "created"
+    },
+    {
+      "path": ".greptile/config.json",
+      "action": "created"
+    },
+    {
+      "path": ".greptile/files.json",
+      "action": "created"
+    },
+    {
+      "path": ".greptile/rules.md",
+      "action": "created"
+    },
+    {
+      "path": ".github/workflows/pr-pipeline.yml",
+      "action": "created"
+    },
+    {
+      "path": "scripts/validate-commit-msg.js",
+      "action": "created"
+    },
+    {
+      "path": "scripts/setup-git-hooks.js",
+      "action": "created"
+    },
+    {
+      "path": "AI/diagrams/.gitkeep",
+      "action": "created"
+    },
+    {
+      "path": "AI/context/diagram-context.md",
+      "action": "created"
+    },
+    {
+      "path": ".diagramrc",
+      "action": "created"
+    },
+    {
+      "path": "biome.json",
+      "action": "created"
+    },
+    {
+      "path": ".gitleaks.toml",
+      "action": "created"
+    },
+    {
+      "path": "prek.toml",
+      "action": "created"
+    },
+    {
+      "path": "scripts/check-environment.sh",
+      "action": "created"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/issue.yml",
+      "action": "created"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/feature.yml",
+      "action": "created"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/security.yml",
+      "action": "created"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/config.yml",
+      "action": "created"
+    },
+    {
+      "path": "Makefile",
+      "action": "created"
+    }
+  ]
+}
