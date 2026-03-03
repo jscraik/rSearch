@@ -1,5 +1,5 @@
 {
-  "harnessVersion": "0.5.7",
+  "harnessVersion": "0.6.0",
   "files": [
     {
       "path": "harness.contract.json",
