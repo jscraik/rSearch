@@ -59,7 +59,7 @@ const readConfigFile = async (path: string, required: boolean): Promise<FileConf
     const parsed = JSON.parse(contents);
     return configSchema.parse(parsed);
   } catch (error) {
-    if (error && typeof error === "object" && "code" in error && (error as any).code === "ENOENT") {
+    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
       if (required) {
         throw new CliError(`Config file not found: ${path}`, 2, "E_USAGE");
       }

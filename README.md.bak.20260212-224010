@@ -42,16 +42,17 @@ Last updated: 2026-01-07
 
 ## Quickstart
 
-### 1) Install
+### 1) Install or set up
 
 ```sh
-npm install -g @brainwav/rsearch
+npm install
+npm run build
 ```
 
-### 2) Run a search
+### 2) Run it
 
 ```sh
-rsearch search "cat:cs.AI" --max-results 5
+node dist/cli.js search "cat:cs.AI" --max-results 5
 ```
 
 ### 3) Verify
@@ -59,6 +60,8 @@ rsearch search "cat:cs.AI" --max-results 5
 Expected output:
 
 - A list of results with IDs and titles.
+
+> Pro tip: install `@brainwav/rsearch` and you can run `rsearch search "cat:cs.AI" --max-results 5` instead of `node dist/cli.js`.
 
 ## Common tasks
 
@@ -68,7 +71,7 @@ Expected output:
 - Steps:
 
 ```sh
-rsearch search "cat:cs.LG" --max-results 10
+node dist/cli.js search "cat:cs.LG" --max-results 10
 ```
 
 - Verify: output shows `Total results` and a list of entries.
@@ -79,7 +82,7 @@ rsearch search "cat:cs.LG" --max-results 10
 - Steps:
 
 ```sh
-rsearch search "cat:cs.AI" --require-license --max-results 10
+node dist/cli.js search "cat:cs.AI" --require-license --max-results 10
 ```
 
 - Verify: summary mentions filtered results when license metadata is missing.
@@ -90,7 +93,7 @@ rsearch search "cat:cs.AI" --require-license --max-results 10
 - Steps:
 
 ```sh
-rsearch fetch 2002.00762 --json
+node dist/cli.js fetch 2002.00762 --json
 ```
 
 - Verify: JSON includes `absUrl` and `pdfUrl`.
@@ -101,7 +104,7 @@ rsearch fetch 2002.00762 --json
 - Steps:
 
 ```sh
-rsearch download 2002.00762 --out-dir ./papers
+node dist/cli.js download 2002.00762 --out-dir ./papers
 ```
 
 - Verify: `./papers/2002.00762.pdf` exists.
@@ -112,8 +115,8 @@ rsearch download 2002.00762 --out-dir ./papers
 - Steps:
 
 ```sh
-rsearch download 2002.00762 --format md --out-dir ./papers
-rsearch download 2002.00762 --format json --out-dir ./papers
+node dist/cli.js download 2002.00762 --format md --out-dir ./papers
+node dist/cli.js download 2002.00762 --format json --out-dir ./papers
 ```
 
 - Verify: `./papers/2002.00762.md` or `./papers/2002.00762.json` exists.
@@ -124,7 +127,7 @@ rsearch download 2002.00762 --format json --out-dir ./papers
 - Steps:
 
 ```sh
-rsearch download 2002.00762 --format json --require-license --out-dir ./papers
+node dist/cli.js download 2002.00762 --format json --require-license --out-dir ./papers
 ```
 
 - Verify: failures are reported with `License metadata missing` when unavailable.
@@ -135,7 +138,7 @@ rsearch download 2002.00762 --format json --require-license --out-dir ./papers
 - Steps:
 
 ```sh
-rsearch download 2002.00762 --format md --keep-pdf --out-dir ./papers
+node dist/cli.js download 2002.00762 --format md --keep-pdf --out-dir ./papers
 ```
 
 - Verify: both `2002.00762.md` and `2002.00762.pdf` exist.
@@ -146,9 +149,9 @@ rsearch download 2002.00762 --format md --keep-pdf --out-dir ./papers
 - Steps:
 
 ```sh
-rsearch urls "cat:cs.AI"
-rsearch urls --ids 2002.00762 2101.00001
-rsearch urls "cat:cs.AI" --require-license
+node dist/cli.js urls "cat:cs.AI"
+node dist/cli.js urls --ids 2002.00762 2101.00001
+node dist/cli.js urls "cat:cs.AI" --require-license
 ```
 
 - Verify: each line includes an abs URL and PDF URL.
@@ -159,8 +162,8 @@ rsearch urls "cat:cs.AI" --require-license
 - Steps:
 
 ```sh
-rsearch categories tree
-rsearch categories list --group "Computer Science"
+node dist/cli.js categories tree
+node dist/cli.js categories list --group "Computer Science"
 ```
 
 - Verify: group names and category IDs are listed.
@@ -182,8 +185,8 @@ Cause:
 Fix:
 
 ```sh
-rsearch search "cat:cs.AI"
-rsearch fetch 2002.00762
+node dist/cli.js search "cat:cs.AI"
+node dist/cli.js fetch 2002.00762
 ```
 
 ### Symptom: “arXiv API request failed (429/5xx)”
@@ -264,24 +267,3 @@ Fix:
 
 **brAInwav**  
 _from demo to duty_
-
-<!-- AGENT-FIRST-WORKFLOW:START -->
-## Agent-first workflow
-
-1. Create/update implementation plan using `.agent/PLANS.md` contract.
-2. Validate plan graph:
-
-```bash
-python3 /Users/jamiecraik/.codex/scripts/plan-graph-lint.py .agent/PLANS.md
-```
-
-3. Run canonical verification:
-
-```bash
-/Users/jamiecraik/.codex/scripts/verify-work.sh
-```
-
-4. Follow global scaffold policy:
-
-- `/Users/jamiecraik/.codex/instructions/agent-first-scaffold-spec.md`
-<!-- AGENT-FIRST-WORKFLOW:END -->
