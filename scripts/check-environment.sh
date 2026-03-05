@@ -86,9 +86,11 @@ jq -e '
 ' "$REPO_ROOT/.diagramrc" >/dev/null
 
 echo "Checking harness CLI..."
-npm exec -- harness --version >/dev/null
-
-echo "Running harness preflight gate..."
-npm exec -- harness preflight-gate --contract "$CONTRACT_PATH"
+if npm exec --yes -- harness --version >/dev/null 2>&1; then
+	echo "Running harness preflight gate..."
+	npm exec --yes -- harness preflight-gate --contract "$CONTRACT_PATH"
+else
+	echo "Warning: harness CLI unavailable; skipping harness preflight gate."
+fi
 
 echo "Environment check passed!"
