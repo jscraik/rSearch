@@ -75,7 +75,7 @@ const defaultConfig: ArxivClientConfig = {
   debug: false
 };
 
-class ResponseError extends Error {
+export class ResponseError extends Error {
   public readonly status: number;
 
   constructor(status: number, statusText: string) {
