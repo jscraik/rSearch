@@ -64,4 +64,8 @@ env-check: ## Validate optional harness environment setup
 	@bash scripts/check-environment.sh
 
 harness-preflight: ## Run harness preflight gate against contract
-	npm exec -- harness preflight-gate --contract harness.contract.json
+	@if npm exec --yes -- harness --version >/dev/null 2>&1; then \
+		npm exec --yes -- harness preflight-gate --contract harness.contract.json; \
+	else \
+		echo "Harness CLI unavailable; skipping harness preflight gate."; \
+	fi
