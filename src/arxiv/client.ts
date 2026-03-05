@@ -75,6 +75,16 @@ const defaultConfig: ArxivClientConfig = {
   debug: false
 };
 
+class ResponseError extends Error {
+  public readonly status: number;
+
+  constructor(status: number, statusText: string) {
+    super(`HTTP ${status}${statusText ? ` ${statusText}` : ""}`);
+    this.name = "ResponseError";
+    this.status = status;
+  }
+}
+
 /**
  * arXiv API client for searching, fetching metadata, and downloading papers.
  *
