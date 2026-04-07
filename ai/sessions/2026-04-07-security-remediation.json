@@ -1,0 +1,21 @@
+{
+  "session_id": "2026-04-07-security-remediation",
+  "date": "2026-04-07",
+  "model": "glm-5.1",
+  "agent": "claude-code",
+  "summary": "Remediated all open Dependabot alerts and CodeQL findings",
+  "actions": [
+    "Bumped vite 8.0.5, fast-xml-parser 5.5.10, vitest 4.1.2",
+    "Fixed shell injection in scripts/commit.js (execSync -> execFileSync)",
+    "Fixed TOCTOU races in add-shebang.cjs, setup-git-hooks.js, client.ts",
+    "Added path traversal validation for arXiv ID downloads",
+    "Extracted regex to constant in query.ts (polynomial-redos)",
+    "Closed Dependabot PRs #39-42 as superseded"
+    "Created PR #43 with all fixes"
+  ],
+  "artifacts": {
+    "prompt": "ai/prompts/2026-04-07-security-remediation.yaml",
+    "session": "ai/sessions/2026-04-07-security-remediation.json",
+    "pr": 43
+  }
+}
