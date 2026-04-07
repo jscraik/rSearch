@@ -38,6 +38,20 @@
     "errors": {
       "type": "array",
       "items": { "type": "string" }
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "message"],
+        "properties": {
+          "kind": { "type": "string", "pattern": "^[a-z_]+$" },
+          "message": { "type": "string" },
+          "original": { "type": "string" },
+          "corrected": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
     }
   },
   "additionalProperties": false

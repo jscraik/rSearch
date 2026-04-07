@@ -84,7 +84,231 @@ const coerceNonNegativeInt = (label: string) => (value: unknown): number | undef
   return parsed;
 };
 
-const cli = yargs(hideBin(process.argv))
+// ── Robot mode helpers ──────────────────────────────────────────
+
+const KNOWN_COMMANDS = ["search", "fetch", "download", "config", "urls", "categories", "help"] as const;
+
+const COMMAND_ALIASES: Record<string, string> = {
+  get: "fetch",
+  find: "search",
+  query: "search",
+  pull: "download",
+  info: "fetch",
+  list: "categories"
+};
+
+const KNOWN_FLAGS = [
+  "json", "plain", "quiet", "verbose", "debug", "color", "no-color", "input",
+  "config", "api-base-url", "pdf-base-url", "user-agent", "contact", "timeout",
+  "rate-limit", "max-retries", "retry", "retry-base-delay", "cache-dir",
+  "cache-ttl", "page-size", "no-cache", "version", "help", "robot",
+  "ids-only", "require-license", "start", "max-results", "sort-by", "sort-order",
+  "out-dir", "overwrite", "format", "keep-pdf", "dry-run", "ids", "limit",
+  "group", "refresh"
+];
+
+const editDistance = (a: string, b: string): number => {
+  const m = a.length;
+  const n = b.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+    }
+  }
+  return dp[m][n];
+};
+
+const fuzzyMatchCommand = (input: string): { command: string; confidence: "high" | "medium" } | null => {
+  const lower = input.toLowerCase();
+  if (COMMAND_ALIASES[lower]) {
+    return { command: COMMAND_ALIASES[lower], confidence: "high" };
+  }
+  let bestMatch: string | null = null;
+  let bestDist = Infinity;
+  for (const cmd of KNOWN_COMMANDS) {
+    const dist = editDistance(lower, cmd);
+    if (dist < bestDist && dist <= Math.max(1, Math.floor(cmd.length / 3))) {
+      bestDist = dist;
+      bestMatch = cmd;
+    }
+  }
+  if (bestMatch) return { command: bestMatch, confidence: "medium" };
+  return null;
+};
+
+const fuzzyMatchFlag = (input: string): { flag: string; confidence: "high" | "medium" } | null => {
+  const raw = input.replace(/^--?(no-)?/, "").toLowerCase();
+  if (!raw) return null;
+
+  // Prefix match (e.g., --max-result matches --max-results)
+  const prefixMatches = KNOWN_FLAGS.filter(f => f.startsWith(raw) || raw.startsWith(f));
+  const closePrefix = prefixMatches.find(f => Math.abs(f.length - raw.length) <= 3);
+  if (closePrefix) return { flag: closePrefix, confidence: "high" };
+
+  // Edit distance match
+  let bestMatch: string | null = null;
+  let bestDist = Infinity;
+  for (const flag of KNOWN_FLAGS) {
+    const dist = editDistance(raw, flag);
+    if (dist < bestDist && dist <= 2) {
+      bestDist = dist;
+      bestMatch = flag;
+    }
+  }
+  if (bestMatch) return { flag: bestMatch, confidence: "medium" };
+  return null;
+};
+
+const normalizeIdInput = (raw: string): string => {
+  let id = raw.trim();
+
+  // Strip arxiv: prefix
+  id = id.replace(/^arxiv:/i, "");
+
+  // Extract ID from arXiv abstract URL
+  const absMatch = id.match(/arxiv\.org\/abs\/(\d{4}\.\d{4,5}(?:v\d+)?)/i);
+  if (absMatch) return absMatch[1];
+
+  // Extract ID from arXiv PDF URL
+  const pdfMatch = id.match(/arxiv\.org\/pdf\/(\d{4}\.\d{4,5}(?:v\d+)?)/i);
+  if (pdfMatch) return pdfMatch[1];
+
+  return id;
+};
+
+const isRobotMode = (argv: string[]): boolean => {
+  if (process.env.RSEARCH_ROBOT_MODE === "1" || process.env.RSEARCH_ROBOT_MODE === "true") return true;
+  if (argv.includes("--robot")) return true;
+  if (!process.stdout.isTTY) return true;
+  return false;
+};
+
+type RobotNote = {
+  kind: string;
+  message: string;
+  original?: string;
+  corrected?: string;
+};
+
+const preprocessArgv = (argv: string[]): { correctedArgv: string[]; notes: RobotNote[] } => {
+  const notes: RobotNote[] = [];
+  const corrected = [...argv];
+
+  // Command alias correction (first positional token, skipping option-value pairs)
+  const OPTION_TAKES_VALUE = new Set([
+    "config", "api-base-url", "pdf-base-url", "user-agent", "contact",
+    "timeout", "rate-limit", "max-retries", "retry-base-delay", "cache-dir",
+    "cache-ttl", "page-size", "color", "out-dir", "format", "max-results",
+    "sort-by", "sort-order", "start", "limit", "group"
+  ]);
+  for (let i = 0; i < corrected.length; i++) {
+    const token = corrected[i];
+    if (token.startsWith("-")) {
+      // If this option takes a value and the next token is not a flag, skip it
+      const flagName = token.includes("=") ? null : token.replace(/^--?(no-)?/, "").toLowerCase();
+      if (flagName && OPTION_TAKES_VALUE.has(flagName) && i + 1 < corrected.length && !corrected[i + 1].startsWith("-")) {
+        i++; // skip the value token
+      }
+      continue;
+    }
+    const match = fuzzyMatchCommand(token);
+    if (match && match.confidence === "high" && match.command !== token.toLowerCase()) {
+      notes.push({
+        kind: "corrected_command",
+        message: `Command '${token}' corrected to '${match.command}'`,
+        original: token,
+        corrected: match.command
+      });
+      corrected[i] = match.command;
+    }
+    break; // Only check the first positional token
+  }
+
+  // Flag typo correction
+  for (let i = 0; i < corrected.length; i++) {
+    const token = corrected[i];
+    if (!token.startsWith("--") || token.startsWith("--no-") || token.includes("=")) continue;
+    // Skip if this is a known flag
+    const raw = token.slice(2).toLowerCase();
+    if (KNOWN_FLAGS.includes(raw)) continue;
+
+    const match = fuzzyMatchFlag(token);
+    if (match && match.confidence === "high") {
+      notes.push({
+        kind: "corrected_flag",
+        message: `Flag '${token}' corrected to '--${match.flag}'`,
+        original: token,
+        corrected: `--${match.flag}`
+      });
+      corrected[i] = `--${match.flag}`;
+    }
+  }
+
+  return { correctedArgv: corrected, notes };
+};
+
+const guessCorrectInvocations = (errorMsg: string): RobotNote[] => {
+  const suggestions: RobotNote[] = [];
+
+  // Parse "Unknown argument: --X" pattern
+  const flagMatch = errorMsg.match(/Unknown argument: (--?\S+)/i);
+  if (flagMatch) {
+    const guessed = fuzzyMatchFlag(flagMatch[1]);
+    if (guessed) {
+      suggestions.push({
+        kind: "suggested_flag",
+        message: `Unknown flag '${flagMatch[1]}'. Did you mean '--${guessed.flag}'?`,
+        original: flagMatch[1],
+        corrected: `--${guessed.flag}`
+      });
+    }
+  }
+
+  // Parse command-related errors
+  const cmdMatch = errorMsg.match(/Unknown command: (\S+)/i)
+    ?? errorMsg.match(/Command not found: (\S+)/i);
+  if (cmdMatch) {
+    const guessed = fuzzyMatchCommand(cmdMatch[1]);
+    if (guessed) {
+      suggestions.push({
+        kind: "suggested_command",
+        message: `Unknown command '${cmdMatch[1]}'. Did you mean '${guessed.command}'? Example: rsearch ${guessed.command} --help`,
+        original: cmdMatch[1],
+        corrected: guessed.command
+      });
+    } else {
+      suggestions.push({
+        kind: "suggested_command",
+        message: `Unknown command '${cmdMatch[1]}'. Available commands: ${KNOWN_COMMANDS.join(", ")}. Try: rsearch --help`
+      });
+    }
+  }
+
+  // Missing positional argument
+  if (errorMsg.includes("Not enough non-option arguments") || errorMsg.includes("required argument")) {
+    suggestions.push({
+      kind: "suggested_usage",
+      message: "A required argument is missing. Try: rsearch --help"
+    });
+  }
+
+  return suggestions.slice(0, 3);
+};
+
+let robotNotes: RobotNote[] = [];
+
+const rawArgv = hideBin(process.argv);
+const { argvForYargs, notes: initialNotes } = isRobotMode(rawArgv)
+  ? (() => { const r = preprocessArgv(rawArgv); return { argvForYargs: r.correctedArgv, notes: r.notes }; })()
+  : { argvForYargs: rawArgv, notes: [] };
+robotNotes = initialNotes;
+
+const cli = yargs(argvForYargs)
   .scriptName("rsearch")
   .usage("$0 [global flags] <command> [args]")
   .example("$0 search \"cat:cs.AI\" --max-results 5", "Search arXiv papers")
@@ -144,6 +368,7 @@ const cli = yargs(hideBin(process.argv))
     describe: "Default page size for API calls"
   })
   .option("no-cache", { type: "boolean", default: false, describe: "Disable caching" })
+  .option("robot", { type: "boolean", default: false, describe: "Enable robot mode (lenient parsing, rich error recovery)" })
   .version(VERSION)
   .alias("h", "help")
   .alias("q", "quiet")
@@ -181,6 +406,17 @@ const cli = yargs(hideBin(process.argv))
       return;
     }
     if (msg) {
+      // Robot mode: enrich yargs validation errors with suggestions
+      if (isRobotMode(rawArgv)) {
+        const suggestions = guessCorrectInvocations(msg);
+        if (suggestions.length > 0) {
+          const enrichedMsg = suggestions.length > 0
+            ? `${msg}\n${suggestions.map(s => s.message).join("\n")}`
+            : msg;
+          emitError(new CliError(enrichedMsg, 2, "E_USAGE"), jsonRequested, suggestions);
+          return;
+        }
+      }
       if (!jsonRequested) {
         yargsInstance.showHelp();
       }
@@ -204,8 +440,8 @@ const cli = yargs(hideBin(process.argv))
           describe: "Filter out results missing license metadata"
         })
         .option("start", { type: "number", describe: "Result offset" })
-        .option("max-results", { type: "number", describe: "Max results to return" })
-        .option("page-size", { type: "number", describe: "API page size (<=2000)" })
+        .option("max-results", { type: "number", describe: "Max results to return (default 100, max 30000)" })
+        .option("page-size", { type: "number", describe: "API page size (max 2000)" })
         .option("sort-by", {
           type: "string",
           choices: ["relevance", "lastUpdatedDate", "submittedDate"],
@@ -215,11 +451,14 @@ const cli = yargs(hideBin(process.argv))
           type: "string",
           choices: ["ascending", "descending"],
           describe: "Sort order"
-        }),
+        })
+        .example("$0 search \"cat:cs.AI\" --max-results 5 --sort-by submittedDate", "Search and sort by date")
+        .example("$0 search \"ti:transformer\" --plain | cut -f1", "Pipe IDs to fetch")
+        .epilog("Pipeline: rsearch search \"cat:cs.AI\" --plain | cut -f1 | xargs rsearch fetch"),
     async (args) => {
       const query = await resolveQuery(args.query, args.input === false);
       if (!query) {
-        throw new CliError("Provide a search query.", 2);
+        throw new CliError("Provide a search query.\nExample: rsearch search 'cat:cs.AI' --max-results 5", 2);
       }
 
       validatePagingArgs(args);
@@ -269,12 +508,20 @@ const cli = yargs(hideBin(process.argv))
           describe: "Filter out records missing license metadata"
         })
         .option("start", { type: "number", describe: "Result offset" })
-        .option("max-results", { type: "number", describe: "Max results to return" })
-        .option("page-size", { type: "number", describe: "API page size (<=2000)" }),
+        .option("max-results", { type: "number", describe: "Max results to return (default 100, max 30000)" })
+        .option("page-size", { type: "number", describe: "API page size (max 2000)" })
+        .example("$0 fetch 2101.00001 2101.00002", "Fetch by ID")
+        .example("$0 fetch 2101.00001 --json | jq '.data.entries[0].title'", "Pipe through jq")
+        .epilog("Pipeline: echo \"2101.00001\" | rsearch fetch --json | jq '.data.entries[0].title'"),
     async (args) => {
       const ids = await resolveIds(args.ids, args.input === false);
       if (ids.length === 0) {
-        throw new CliError("Provide one or more arXiv IDs.", 2);
+        throw new CliError("Provide one or more arXiv IDs.\nExample: rsearch fetch 2101.00001 2101.00002", 2);
+      }
+
+      const warnLargeBatch = ids.length > 50 && args.maxResults === undefined;
+      if (warnLargeBatch && !args.json && !args.plain && !args.quiet) {
+        process.stderr.write(`Warning: Fetching ${ids.length} IDs without --max-results. Consider adding --max-results to bound the response.\n`);
       }
 
       validatePagingArgs(args);
@@ -290,9 +537,13 @@ const cli = yargs(hideBin(process.argv))
         ? { ...result, entries: filtered.allowed, missingLicenseIds: filtered.missingIds }
         : result;
 
-      const summary = filtered
+      let summary = filtered
         ? `Returned ${filtered.allowed.length} record(s); filtered ${filtered.missingIds.length} without license metadata`
         : `Returned ${result.entries.length} record(s)`;
+      const status = filtered ? "warn" : (warnLargeBatch ? "warn" : "success");
+      if (warnLargeBatch) {
+        summary += `; large batch (${ids.length} IDs) — consider --max-results`;
+      }
 
       await outputResult({
         args,
@@ -302,7 +553,7 @@ const cli = yargs(hideBin(process.argv))
         plain: args.idsOnly ? formatIdsPlain(filteredResult.entries) : formatEntriesPlain(filteredResult.entries),
         human: formatSearchHuman(filteredResult),
         quietText: args.idsOnly ? formatIdsPlain(filteredResult.entries) : "",
-        status: filtered ? "warn" : "success",
+        status,
         exitCode: filtered && filtered.missingIds.length > 0 ? 3 : 0,
         errors: filtered?.missingIds.length ? ["license_metadata_missing"] : []
       });
@@ -328,9 +579,13 @@ const cli = yargs(hideBin(process.argv))
           default: false,
           describe: "Fail downloads when license metadata is missing"
         })
+        .option("dry-run", { type: "boolean", default: false, describe: "Show download plan without downloading" })
         .option("query", { type: "string", describe: "Search query to download results" })
-        .option("max-results", { type: "number", describe: "Max results to download" })
-        .option("page-size", { type: "number", describe: "API page size (<=2000)" }),
+        .option("max-results", { type: "number", describe: "Max results to download (default 100, max 30000)" })
+        .option("page-size", { type: "number", describe: "API page size (max 2000)" })
+        .example("$0 download 2101.00001 --out-dir ./papers", "Download a PDF")
+        .example("$0 download --query \"cat:cs.AI\" --max-results 3", "Download search results")
+        .epilog("Pipeline: rsearch search \"cat:cs.AI\" --plain | cut -f1 | xargs rsearch download"),
     async (args) => {
       const { client, defaultDownloadDir } = await createClientContext(args);
       const outputDir = args.outDir ?? defaultDownloadDir ?? process.cwd();
@@ -347,7 +602,54 @@ const cli = yargs(hideBin(process.argv))
       }
 
       if (ids.length === 0) {
-        throw new CliError("Provide arXiv IDs or a --query to download.", 2);
+        throw new CliError("Provide arXiv IDs or a --query to download.\nExample: rsearch download 2101.00001 --out-dir ./papers", 2);
+      }
+
+      // --dry-run: resolve IDs, check file existence, output plan without downloading
+      if (args.dryRun) {
+        const format = args.format ?? "pdf";
+        const dryRunResults: { id: string; path: string; status: string; error?: string }[] = [];
+
+        if (args.requireLicense) {
+          const metadata = await client.fetchByIds(ids);
+          const entryMap = mapEntriesByBaseId(metadata.entries);
+          const filtered = filterIdsByLicense(ids, entryMap);
+          for (const fail of filtered.failed) {
+            dryRunResults.push({ id: fail.id, path: "", status: "would-fail", error: "License metadata missing" });
+          }
+          ids = filtered.allowed;
+        }
+
+        for (const rawId of ids) {
+          const safeId = rawId.replace(/\s+/g, "").replace(/\.pdf$/i, "").replace(/v\d+$/i, "");
+          if (safeId.includes("..") || safeId.startsWith("/") || safeId.startsWith("\\")) {
+            dryRunResults.push({ id: safeId, path: "", status: "would-fail", error: "Invalid arXiv ID" });
+            continue;
+          }
+          const filename = `${safeId.replace(/\//g, "_")}.${format}`;
+          const outputPath = resolve(outputDir, filename);
+          const exists = await fileExists(outputPath);
+          dryRunResults.push({
+            id: safeId,
+            path: outputPath,
+            status: exists ? "would-skip" : "would-download"
+          });
+        }
+
+        const hasLicenseFails = dryRunResults.some((r) => r.status === "would-fail" && r.error === "License metadata missing");
+        await outputResult({
+          args,
+          schema: "arxiv.download.dryrun.v1",
+          summary: `Would download ${dryRunResults.filter((r) => r.status === "would-download").length}, skip ${dryRunResults.filter((r) => r.status === "would-skip").length}, fail ${dryRunResults.filter((r) => r.status === "would-fail").length}`,
+          json: { results: dryRunResults },
+          plain: formatDownloadHuman(dryRunResults),
+          human: formatDownloadHuman(dryRunResults),
+          quietText: "",
+          status: hasLicenseFails ? "warn" : "success",
+          exitCode: hasLicenseFails ? 3 : 0,
+          errors: hasLicenseFails ? ["license_metadata_missing"] : []
+        });
+        return;
       }
 
       const format = args.format ?? "pdf";
@@ -461,8 +763,8 @@ const cli = yargs(hideBin(process.argv))
           describe: "Filter out results missing license metadata"
         })
         .option("start", { type: "number", describe: "Result offset" })
-        .option("max-results", { type: "number", describe: "Max results to return" })
-        .option("page-size", { type: "number", describe: "API page size (<=2000)" })
+        .option("max-results", { type: "number", describe: "Max results to return (default 100, max 30000)" })
+        .option("page-size", { type: "number", describe: "API page size (max 2000)" })
         .option("sort-by", {
           type: "string",
           choices: ["relevance", "lastUpdatedDate", "submittedDate"],
@@ -472,7 +774,10 @@ const cli = yargs(hideBin(process.argv))
           type: "string",
           choices: ["ascending", "descending"],
           describe: "Sort order"
-        }),
+        })
+        .example("$0 urls \"cat:cs.AI\" --max-results 5 --plain", "Get URLs for search results")
+        .example("$0 urls --ids 2101.00001 2101.00002 --quiet", "Get PDF URLs by ID")
+        .epilog("Pipeline: rsearch urls \"cat:cs.AI\" --quiet > pdf_urls.txt"),
     async (args) => {
       const hasIdsArg = Array.isArray(args.ids) && args.ids.length > 0;
       const ids = hasIdsArg ? await resolveIds(args.ids, args.input === false) : [];
@@ -480,7 +785,7 @@ const cli = yargs(hideBin(process.argv))
       const query = hasIds ? "" : await resolveQuery(args.query, args.input === false);
 
       if (!hasIds && !query) {
-        throw new CliError("Provide a search query or IDs via --ids.", 2);
+        throw new CliError("Provide a search query or IDs via --ids.\nExample: rsearch urls 'cat:cs.AI' or rsearch urls --ids 2101.00001", 2);
       }
 
       validatePagingArgs(args);
@@ -545,28 +850,39 @@ const cli = yargs(hideBin(process.argv))
             yy
               .option("group", { type: "string", describe: "Filter by group name" })
               .option("ids-only", { type: "boolean", default: false, describe: "Return only IDs" })
-              .option("refresh", { type: "boolean", default: false, describe: "Refresh taxonomy" }),
+              .option("limit", { type: "number", describe: "Max categories to return" })
+              .option("refresh", { type: "boolean", default: false, describe: "Refresh taxonomy" })
+              .example("$0 categories list --group \"Computer Science\"", "List CS categories")
+              .example("$0 categories list --ids-only --limit 10", "Get first 10 category IDs")
+              .epilog("Pipeline: rsearch categories list --ids-only --group \"Computer Science\""),
           async (args) => {
             const taxonomy = await loadTaxonomy(args);
+            const limit = args.limit !== undefined ? coercePositiveInt("limit")(args.limit) : undefined;
             const categories = filterByGroup(taxonomy.categories, args.group);
+            const limited = limit ? categories.slice(0, limit) : categories;
+            const summary = limit
+              ? `Returned ${limited.length} of ${categories.length} category(ies)`
+              : `Returned ${categories.length} category(ies)`;
 
             await outputResult({
               args,
               schema: "arxiv.categories.list.v1",
-              summary: `Returned ${categories.length} category(ies)`,
-              json: { categories, sourceUrl: taxonomy.sourceUrl },
+              summary,
+              json: { categories: limited, sourceUrl: taxonomy.sourceUrl },
               plain: args.idsOnly
-                ? categories.map((c) => c.id).join("\n")
-                : formatCategoryList(categories),
-              human: formatCategoryList(categories),
-              quietText: args.idsOnly ? categories.map((c) => c.id).join("\n") : ""
+                ? limited.map((c) => c.id).join("\n")
+                : formatCategoryList(limited),
+              human: formatCategoryList(limited),
+              quietText: args.idsOnly ? limited.map((c) => c.id).join("\n") : ""
             });
           }
         )
         .command(
           "tree",
           "Show categories grouped by top-level group",
-          (yy) => yy.option("refresh", { type: "boolean", default: false, describe: "Refresh taxonomy" }),
+          (yy) => yy
+            .option("refresh", { type: "boolean", default: false, describe: "Refresh taxonomy" })
+            .example("$0 categories tree", "Browse full taxonomy"),
           async (args) => {
             const taxonomy = await loadTaxonomy(args);
             await outputResult({
@@ -587,7 +903,8 @@ const cli = yargs(hideBin(process.argv))
             yy
               .positional("term", { type: "string", describe: "Search term" })
               .option("group", { type: "string", describe: "Filter by group name" })
-              .option("refresh", { type: "boolean", default: false, describe: "Refresh taxonomy" }),
+              .option("refresh", { type: "boolean", default: false, describe: "Refresh taxonomy" })
+              .example("$0 categories search \"machine learning\"", "Find ML categories"),
           async (args) => {
             const taxonomy = await loadTaxonomy(args);
             const term = String(args.term ?? "").trim();
@@ -617,7 +934,8 @@ const cli = yargs(hideBin(process.argv))
           (yy) =>
             yy
               .positional("id", { type: "string", describe: "Category id" })
-              .option("refresh", { type: "boolean", default: false, describe: "Refresh taxonomy" }),
+              .option("refresh", { type: "boolean", default: false, describe: "Refresh taxonomy" })
+              .example("$0 categories show cs.AI", "Show AI category details"),
           async (args) => {
             const taxonomy = await loadTaxonomy(args);
             const id = String(args.id ?? "").trim();
@@ -653,7 +971,8 @@ const splitIdTokens = (values: string[]): string[] =>
   values
     .flatMap((value) => value.split(","))
     .map((value) => value.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .map(normalizeIdInput);
 
 const resolveIds = async (ids: string[] | undefined, noInput?: boolean): Promise<string[]> => {
   const list = splitIdTokens((ids ?? []).filter(Boolean));
@@ -661,10 +980,10 @@ const resolveIds = async (ids: string[] | undefined, noInput?: boolean): Promise
     return list;
   }
   if (noInput) {
-    throw new CliError("Provide arXiv IDs; stdin disabled by --no-input.", 2, "E_USAGE");
+    throw new CliError("Provide arXiv IDs; stdin disabled by --no-input.\nExample: rsearch fetch 2101.00001 2101.00002", 2, "E_USAGE");
   }
   if (process.stdin.isTTY) {
-    throw new CliError("Provide arXiv IDs or pipe them via stdin.", 2, "E_USAGE");
+    throw new CliError("Provide arXiv IDs or pipe them via stdin.\nExample: rsearch fetch 2101.00001 or echo '2101.00001' | rsearch fetch", 2, "E_USAGE");
   }
   const lines = await readLines();
   return splitIdTokens(lines);
@@ -673,10 +992,10 @@ const resolveIds = async (ids: string[] | undefined, noInput?: boolean): Promise
 const resolveQuery = async (query: string | undefined, noInput?: boolean): Promise<string> => {
   if (!query || query === "-") {
     if (noInput) {
-      throw new CliError("Provide a query string; stdin disabled by --no-input.", 2, "E_USAGE");
+      throw new CliError("Provide a query string; stdin disabled by --no-input.\nExample: rsearch search 'cat:cs.AI'", 2, "E_USAGE");
     }
     if (process.stdin.isTTY) {
-      throw new CliError("Provide a query string or pipe it via stdin.", 2, "E_USAGE");
+      throw new CliError("Provide a query string or pipe it via stdin.\nExample: rsearch search 'cat:cs.AI' or echo 'cat:cs.AI' | rsearch search", 2, "E_USAGE");
     }
     const input = await readStdin();
     return input.trim();
@@ -945,6 +1264,16 @@ const resolveUserAgent = (userAgent: string | undefined, contact?: string) => {
   return `rsearch/${VERSION} (${contactValue})`;
 };
 
+const resolveOutputMode = (args: OutputArgs): "json" | "plain" | "quiet" | "human" => {
+  if (args.json) return "json";
+  if (args.plain) return "plain";
+  if (args.quiet) return "quiet";
+  const envOutput = process.env.RSEARCH_OUTPUT;
+  if (envOutput === "json" || envOutput === "plain" || envOutput === "quiet") return envOutput;
+  if (!process.stdout.isTTY) return "json";
+  return "human";
+};
+
 const outputResult = async ({
   args,
   schema,
@@ -955,7 +1284,8 @@ const outputResult = async ({
   quietText,
   status = "success",
   exitCode = 0,
-  errors = []
+  errors = [],
+  notes
 }: {
   args: OutputArgs;
   schema: string;
@@ -967,6 +1297,7 @@ const outputResult = async ({
   status?: "success" | "warn" | "error";
   exitCode?: number;
   errors?: string[];
+  notes?: RobotNote[];
 }) => {
   const colorMode = resolveColorMode(args);
   if (colorMode === "never") {
@@ -976,20 +1307,23 @@ const outputResult = async ({
     delete process.env.NO_COLOR;
   }
 
-  if (args.json) {
-    const envelope = createEnvelope(schema, json, summary, status, errors);
+  const mode = resolveOutputMode(args);
+  const allNotes = [...(robotNotes.length > 0 ? robotNotes : []), ...(notes ?? [])];
+
+  if (mode === "json") {
+    const envelope = createEnvelope(schema, json, summary, status, errors, allNotes.length > 0 ? allNotes : undefined);
     process.stdout.write(JSON.stringify(envelope, null, 2));
     if (exitCode) process.exitCode = exitCode;
     return;
   }
 
-  if (args.plain) {
+  if (mode === "plain") {
     process.stdout.write(`${plain}\n`);
     if (exitCode) process.exitCode = exitCode;
     return;
   }
 
-  if (args.quiet) {
+  if (mode === "quiet") {
     if (quietText) {
       process.stdout.write(`${quietText}\n`);
     }
@@ -1012,10 +1346,20 @@ const resolveColorMode = (args: ColorArgs): "auto" | "always" | "never" => {
 };
 
 const isJsonRequested = (args?: unknown): boolean => {
+  // Explicit --json flag in parsed args
   if (args && typeof args === "object" && "json" in args && (args as { json?: unknown }).json === true) {
     return true;
   }
-  return process.argv.includes("--json");
+  // Explicit --json on raw argv
+  if (process.argv.includes("--json")) return true;
+  // RSEARCH_OUTPUT env var
+  const envOutput = process.env.RSEARCH_OUTPUT;
+  if (envOutput === "json") return true;
+  // If env var explicitly requests plain/quiet, honor that over non-TTY fallback
+  if (envOutput === "plain" || envOutput === "quiet") return false;
+  // Non-TTY auto-json (unless --plain or --quiet override)
+  if (!process.argv.includes("--plain") && !process.argv.includes("--quiet") && !process.stdout.isTTY) return true;
+  return false;
 };
 
 const errorCodeForExitCode = (exitCode: number): string => {
@@ -1038,25 +1382,27 @@ const resolveErrorCode = (error: unknown, exitCode: number): string => {
   return errorCodeForExitCode(exitCode);
 };
 
-const emitJsonError = (message: string, exitCode: number, code: string) => {
+const emitJsonError = (message: string, exitCode: number, code: string, notes?: RobotNote[]) => {
+  const allNotes = [...(robotNotes.length > 0 ? robotNotes : []), ...(notes ?? [])];
   const envelope = createEnvelope(
     "arxiv.error.v1",
     { error: { code, message }, exitCode },
     message,
     "error",
-    [code]
+    [code],
+    allNotes.length > 0 ? allNotes : undefined
   );
   process.stdout.write(JSON.stringify(envelope, null, 2));
   process.exit(exitCode);
 };
 
-const emitError = (error: unknown, jsonRequested: boolean) => {
+const emitError = (error: unknown, jsonRequested: boolean, notes?: RobotNote[]) => {
   const message = error instanceof CliError ? error.message : error instanceof Error ? error.message : String(error);
   const exitCode = error instanceof CliError ? error.exitCode : 1;
   const code = resolveErrorCode(error, exitCode);
 
   if (jsonRequested) {
-    emitJsonError(message, exitCode, code);
+    emitJsonError(message, exitCode, code, notes);
     return;
   }
 

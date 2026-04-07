@@ -165,6 +165,55 @@ rsearch categories list --group "Computer Science"
 
 - Verify: group names and category IDs are listed.
 
+## Robot mode (for AI agents and scripts)
+
+rsearch has a **robot mode** that makes it forgiving and helpful when called by non-human consumers (AI agents, CI scripts, automation tools).
+
+### Activation
+
+Robot mode activates automatically when:
+- stdout is not a TTY (piped/redirected output)
+- `--robot` flag is passed
+- `RSEARCH_ROBOT_MODE=1` environment variable is set
+
+### What robot mode does
+
+1. **Lenient command parsing** — common aliases are auto-corrected:
+
+   | Typed | Corrected to |
+   |-------|-------------|
+   | `get` | `fetch` |
+   | `find` | `search` |
+   | `query` | `search` |
+   | `pull` | `download` |
+   | `info` | `fetch` |
+   | `list` | `categories` |
+
+2. **Flag typo correction** — close matches like `--max-result` are auto-corrected to `--max-results`
+
+3. **ID normalization** — arXiv IDs are normalized automatically:
+   - `arxiv:2101.00001` → `2101.00001`
+   - `https://arxiv.org/abs/2101.00001` → `2101.00001`
+   - `https://arxiv.org/pdf/2101.00001` → `2101.00001`
+
+4. **Rich error recovery** — when intent is ambiguous, errors include suggested correct invocations
+
+5. **Correction notes** — the JSON envelope includes a `notes` array documenting any auto-corrections
+
+### Output contract
+
+- All JSON output follows a versioned envelope schema (`arxiv.*.v1`)
+- Exit codes: 0 = success, 1 = failure, 2 = usage error, 3 = policy violation, 4 = partial failure
+- The `notes` field is optional and only present when corrections were applied
+
+### Example
+
+```sh
+rsearch get 2101.00001 --json
+# → Corrected to 'fetch'. Response includes:
+#   "notes": [{ "kind": "corrected_command", "original": "get", "corrected": "fetch" }]
+```
+
 ## Risks and assumptions
 
 - Assumes arXiv API availability and that users respect rate limits.
