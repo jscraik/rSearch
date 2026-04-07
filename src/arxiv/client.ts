@@ -3,8 +3,8 @@ import { parseAtom } from "./parser.js";
 import type { ArxivEntry, ArxivSearchOptions, ArxivSearchResult } from "./types.js";
 import { RateLimiter } from "./rateLimiter.js";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
-import { createHash } from "node:crypto";
+import { dirname, resolve, sep } from "node:path";
+import { createHash, randomUUID } from "node:crypto";
 import { VERSION } from "../version.js";
 import { fileExists } from "../utils/io.js";
 
@@ -323,15 +323,19 @@ export class ArxivClient {
 
     for (const id of ids) {
       const safeId = id.replace(/\s+/g, "").replace(/\.pdf$/i, "");
-      if (safeId.includes("/") || safeId.includes("..") || safeId.includes("\\")) {
+      // Block path traversal: reject ".." segments and leading/absolute paths,
+      // but allow legacy arXiv IDs with internal slashes (e.g. cs.AI/0001001).
+      if (safeId.includes("..") || safeId.startsWith("/") || safeId.startsWith("\\")) {
         results.push({ id: safeId, path: "", status: "failed", error: "Invalid arXiv ID" });
         continue;
       }
-      const filename = `${safeId}.pdf`;
+      // Sanitize slashes for the filesystem filename while preserving the ID
+      const filename = `${safeId.replace(/\//g, "_")}.pdf`;
       const outputPath = resolve(outputDir, filename);
 
       // Validate resolved path stays within output directory
-      if (!outputPath.startsWith(resolve(outputDir))) {
+      const outputDirResolved = resolve(outputDir);
+      if (!outputPath.startsWith(outputDirResolved + sep) && outputPath !== outputDirResolved) {
         results.push({ id: safeId, path: "", status: "failed", error: "Invalid output path" });
         continue;
       }
@@ -610,7 +614,9 @@ const writeDiskCache = async (
   const filename = cacheFilenameForUrl(url);
   const filePath = resolve(cacheDir, filename);
   await mkdir(dirname(filePath), { recursive: true });
-  const tmpPath = filePath + ".tmp";
+  // Use unique temp file per write to avoid races when concurrent requests
+  // resolve the same URL
+  const tmpPath = `${filePath}.tmp-${randomUUID()}`;
   await writeFile(tmpPath, payload, "utf8");
   const { rename } = await import("node:fs/promises");
   await rename(tmpPath, filePath);

@@ -9,6 +9,10 @@ try {
   if (!contents.startsWith(shebang)) {
     fs.writeFileSync(target, shebang + contents, "utf8");
   }
-} catch {
-  // File doesn't exist yet — skip silently
+} catch (err) {
+  // Only skip if the file doesn't exist yet (normal for clean builds).
+  // Re-throw permission, disk-full, and other real errors.
+  if (err.code !== "ENOENT") {
+    throw err;
+  }
 }

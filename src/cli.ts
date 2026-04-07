@@ -712,7 +712,8 @@ const loadTaxonomy = async (args: RefreshArgs): Promise<TaxonomyResult> => {
 
 const normalizeArxivId = (id: string): string => {
   const safeId = id.replace(/\s+/g, "").replace(/\.pdf$/i, "").replace(/v\d+$/i, "");
-  if (safeId.includes("/") || safeId.includes("..") || safeId.includes("\\")) {
+  // Block path traversal but allow legacy arXiv IDs with internal slashes (e.g. cs.AI/0001001)
+  if (safeId.includes("..") || safeId.startsWith("/") || safeId.startsWith("\\")) {
     throw new CliError(`Invalid arXiv ID: ${id}`, 2, "E_VALIDATION");
   }
   return safeId;
