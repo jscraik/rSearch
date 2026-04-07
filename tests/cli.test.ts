@@ -247,6 +247,22 @@ describe("cli categories list --limit", () => {
 
     expect(result.stdout).toContain("--limit");
   });
+
+  it("rejects --limit 0", () => {
+    const result = runCli(["categories", "list", "--limit", "0", "--json"]);
+
+    expect(result.status).toBe(2);
+    const payload = JSON.parse(result.stdout);
+    expect(payload.errors).toContain("E_VALIDATION");
+  });
+
+  it("rejects non-numeric --limit", () => {
+    const result = runCli(["categories", "list", "--limit", "abc", "--json"]);
+
+    expect(result.status).toBe(2);
+    const payload = JSON.parse(result.stdout);
+    expect(payload.errors).toContain("E_VALIDATION");
+  });
 });
 
 // Robot mode
@@ -314,6 +330,17 @@ describe("cli robot mode", () => {
     // Output should be JSON (since robot mode → non-TTY auto-json)
     const payload = JSON.parse(result.stdout);
     expect(payload.schema).toBe("arxiv.fetch.v1");
+  });
+
+  it("corrects command alias even with preceding global option-value pair", () => {
+    // Use --timeout (takes a value) before the command alias
+    const result = runCli(["--timeout", "5000", "get", ...makeIds(1), "--json"]);
+
+    // --timeout takes a value, so "get" should still be detected as the command
+    const payload = JSON.parse(result.stdout);
+    expect(payload.schema).toBe("arxiv.fetch.v1");
+    expect(payload.notes).toBeDefined();
+    expect(payload.notes.some((n: { kind: string }) => n.kind === "corrected_command")).toBe(true);
   });
 
   it("shows --robot in help", () => {

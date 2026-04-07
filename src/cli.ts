@@ -199,10 +199,23 @@ const preprocessArgv = (argv: string[]): { correctedArgv: string[]; notes: Robot
   const notes: RobotNote[] = [];
   const corrected = [...argv];
 
-  // Command alias correction (first non-option token)
+  // Command alias correction (first positional token, skipping option-value pairs)
+  const OPTION_TAKES_VALUE = new Set([
+    "config", "api-base-url", "pdf-base-url", "user-agent", "contact",
+    "timeout", "rate-limit", "max-retries", "retry-base-delay", "cache-dir",
+    "cache-ttl", "page-size", "color", "out-dir", "format", "max-results",
+    "sort-by", "sort-order", "start", "limit", "group"
+  ]);
   for (let i = 0; i < corrected.length; i++) {
     const token = corrected[i];
-    if (token.startsWith("-")) continue;
+    if (token.startsWith("-")) {
+      // If this option takes a value and the next token is not a flag, skip it
+      const flagName = token.includes("=") ? null : token.replace(/^--?(no-)?/, "").toLowerCase();
+      if (flagName && OPTION_TAKES_VALUE.has(flagName) && i + 1 < corrected.length && !corrected[i + 1].startsWith("-")) {
+        i++; // skip the value token
+      }
+      continue;
+    }
     const match = fuzzyMatchCommand(token);
     if (match && match.confidence === "high" && match.command !== token.toLowerCase()) {
       notes.push({
@@ -213,7 +226,7 @@ const preprocessArgv = (argv: string[]): { correctedArgv: string[]; notes: Robot
       });
       corrected[i] = match.command;
     }
-    break; // Only check the first non-option token
+    break; // Only check the first positional token
   }
 
   // Flag typo correction
@@ -844,9 +857,10 @@ const cli = yargs(argvForYargs)
               .epilog("Pipeline: rsearch categories list --ids-only --group \"Computer Science\""),
           async (args) => {
             const taxonomy = await loadTaxonomy(args);
+            const limit = args.limit !== undefined ? coercePositiveInt("limit")(args.limit) : undefined;
             const categories = filterByGroup(taxonomy.categories, args.group);
-            const limited = args.limit ? categories.slice(0, args.limit) : categories;
-            const summary = args.limit
+            const limited = limit ? categories.slice(0, limit) : categories;
+            const summary = limit
               ? `Returned ${limited.length} of ${categories.length} category(ies)`
               : `Returned ${categories.length} category(ies)`;
 
@@ -1332,12 +1346,18 @@ const resolveColorMode = (args: ColorArgs): "auto" | "always" | "never" => {
 };
 
 const isJsonRequested = (args?: unknown): boolean => {
+  // Explicit --json flag in parsed args
   if (args && typeof args === "object" && "json" in args && (args as { json?: unknown }).json === true) {
     return true;
   }
+  // Explicit --json on raw argv
   if (process.argv.includes("--json")) return true;
+  // RSEARCH_OUTPUT env var
   const envOutput = process.env.RSEARCH_OUTPUT;
   if (envOutput === "json") return true;
+  // If env var explicitly requests plain/quiet, honor that over non-TTY fallback
+  if (envOutput === "plain" || envOutput === "quiet") return false;
+  // Non-TTY auto-json (unless --plain or --quiet override)
   if (!process.argv.includes("--plain") && !process.argv.includes("--quiet") && !process.stdout.isTTY) return true;
   return false;
 };
