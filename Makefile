@@ -1,71 +1,125 @@
-# Harness utility Makefile for rsearch
+# Harness Development Makefile
+# Run `make help` to see available commands
 
-.PHONY: \
-	help install setup hooks \
-	dev build \
-	lint typecheck test ci check \
-	docs-check-links \
-	audit security \
-	clean reset \
-	diagrams env-check harness-preflight
+.PHONY: help install setup preflight worktree-ready verify-work hooks hooks-pre-commit hooks-pre-push secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
 
-help: ## Show available targets
+# Default target
+help: ## Show this help message
 	@echo 'Usage: make [target]'
 	@echo ''
 	@echo 'Targets:'
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-15s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-install: ## Install npm dependencies
-	npm install
+# === Setup ===
 
-setup: install hooks ## Install dependencies and configure git hooks
+install: ## Install dependencies
+	pnpm install
 
-hooks: ## Install simple-git-hooks
-	npm exec -- simple-git-hooks
+setup: install hooks ## Full setup: install deps and configure git hooks
 
-dev: ## Run CLI in dev mode
-	npm run dev
+preflight: ## Run repository preflight checks (required local-memory gate by default)
+	@bash ./scripts/codex-preflight.sh
 
-build: ## Build TypeScript
-	npm run build
+worktree-ready: ## Bootstrap a fresh git worktree before first push
+	@bash ./scripts/prepare-worktree.sh
 
-lint: ## Run type-focused lint gate
-	npm run lint:types
+verify-work: ## Run canonical repo-local verification wrapper
+	@bash ./scripts/verify-work.sh
 
-typecheck: ## Run TypeScript typecheck
-	npm run typecheck
+hooks: ## Setup git hooks
+	node scripts/setup-git-hooks.js
+
+hooks-pre-commit: ## Run local pre-commit gates before creating a commit
+	pnpm lint
+	pnpm docs:lint
+	pnpm typecheck
+	$(MAKE) secrets-staged
+	$(MAKE) docs-style-changed
+	$(MAKE) related-tests
+
+hooks-pre-push: ## Run local pre-push governance gates before pushing
+	pnpm exec tsx src/cli.ts docs-gate --mode required --json
+	@bash ./scripts/check-diagram-freshness.sh
+	pnpm exec tsx src/cli.ts tooling-audit --path . --json
+	@bash ./scripts/check-environment.sh
+	$(MAKE) semgrep-changed
+	pnpm test
+	pnpm build
+	pnpm audit
+
+secrets-staged: ## Scan staged content for secrets before committing
+	pnpm run secrets:staged
+
+docs-style-changed: ## Run Vale on staged authoritative docs only
+	pnpm run docs:style:changed
+
+related-tests: ## Run Vitest related mode for staged src implementation files
+	pnpm run test:related
+
+semgrep-changed: ## Run narrow Semgrep rules against changed src implementation files
+	pnpm run semgrep:changed
+
+diagrams-check: ## Refresh architecture diagrams when sensitive paths change and fail on drift
+	@bash ./scripts/check-diagram-freshness.sh
+
+# === Development ===
+
+dev: ## Start development server
+	pnpm dev
+
+build: ## Build for production
+	pnpm build
+
+# === Quality ===
+
+lint: ## Run linter
+	pnpm lint
+
+docs-lint: ## Lint markdown/docs
+	pnpm docs:lint
+
+fmt: ## Format code
+	pnpm fmt
+
+typecheck: ## Run TypeScript type checking
+	pnpm typecheck
 
 test: ## Run tests
-	npm test
+	pnpm test
 
-ci: ## Run repo CI command
-	npm run ci
+check: ## Run all required quality gates
+	pnpm check
 
-check: lint typecheck test ## Run local quality checks
+# === Security ===
 
-docs-check-links: ## Check markdown links
-	npm run docs:check-links
+audit: ## Run security audit
+	pnpm audit
 
-audit: ## Run npm audit with repo policy
-	npm run audit
+secrets: ## Scan for secrets with gitleaks
+	@gitleaks detect --source . --verbose || (echo "Install gitleaks: brew install gitleaks" && exit 1)
 
-security: audit ## Run security checks
+security: audit secrets ## Run all security checks
 
-clean: ## Remove generated artifacts
-	rm -rf dist coverage artifacts
+# === Maintenance ===
 
-reset: clean ## Reset dependencies
-	npm install
+clean: ## Clean build artifacts and caches
+	rm -rf dist coverage artifacts .test-traces* .traces
+	rm -rf node_modules/.cache
+
+reset: clean ## Full reset: clean and reinstall
+	pnpm install
+
+# === CI ===
+
+ci: ## Run CI-equivalent local checks
+	pnpm check
+
+# === Diagrams ===
 
 diagrams: ## Generate architecture diagrams
-	npm exec -- diagram all . --output-dir ai/diagrams
+	@bash ./scripts/refresh-diagram-context.sh --force
 
-env-check: ## Validate optional harness environment setup
-	@bash scripts/check-environment.sh
+# === Environment ===
 
-harness-preflight: ## Run harness preflight gate against contract
-	@if npm exec --yes -- harness --version >/dev/null 2>&1; then \
-		npm exec --yes -- harness preflight-gate --contract harness.contract.json; \
-	else \
-		echo "Harness CLI unavailable; skipping harness preflight gate."; \
-	fi
+env-check: ## Check environment policy envelope
+	@bash ./scripts/check-environment.sh

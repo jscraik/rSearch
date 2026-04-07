@@ -17,28 +17,27 @@
   },
   "rules": [
     {
-      "id": "esm-local-import-extension",
-      "glob": "src/**/*.ts",
-      "description": "Local ESM imports must include the .js extension.",
-      "severity": "high"
-    },
-    {
-      "id": "no-main-direct-push",
-      "glob": "**/*",
-      "description": "No direct push to main; all changes flow through PR with review artifacts.",
-      "severity": "high"
-    },
-    {
       "id": "independent-ai-validation",
       "glob": "**/*",
-      "description": "Coding agent must not approve its own PR; separate review agent required.",
+      "description": "Coding agent must not approve its own PR; separate review signal required.",
       "severity": "high"
+    },
+    {
+      "id": "governance-parity",
+      "glob": "**/*",
+      "description": "Changes to governance, workflow, or policy surfaces must keep docs, required checks, and implementation aligned.",
+      "severity": "high"
+    },
+    {
+      "id": "evidence-required-for-review-policy",
+      "glob": "**/*",
+      "description": "Policy, workflow, or review-gate changes require validation evidence before merge.",
+      "severity": "medium"
     }
   ],
   "ignorePatterns": [
     "dist/**",
     "coverage/**",
-    "node_modules/**",
-    ".pnpm-store/**"
+    "node_modules/**"
   ]
 }

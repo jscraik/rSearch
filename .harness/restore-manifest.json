@@ -1,5 +1,6 @@
 {
-  "harnessVersion": "0.6.0",
+  "harnessVersion": "0.11.12",
+  "ciProvider": "github-actions",
   "files": [
     {
       "path": "harness.contract.json",
@@ -80,6 +81,83 @@
     {
       "path": "Makefile",
       "action": "created"
+    },
+    {
+      "path": ".harness/ci-required-checks.json",
+      "action": "created"
+    },
+    {
+      "path": ".harness/ci-provider-transition-status.json",
+      "action": "created"
+    },
+    {
+      "path": "scripts/check-staged-secrets.sh",
+      "action": "created"
+    },
+    {
+      "path": "scripts/check-doc-style.sh",
+      "action": "created"
+    },
+    {
+      "path": "scripts/check-related-tests.sh",
+      "action": "created"
+    },
+    {
+      "path": "scripts/check-semgrep-changed.sh",
+      "action": "created"
+    },
+    {
+      "path": "scripts/semgrep-pre-push.yml",
+      "action": "created"
+    },
+    {
+      "path": "scripts/refresh-diagram-context.sh",
+      "action": "created"
+    },
+    {
+      "path": "scripts/check-diagram-freshness.sh",
+      "action": "created"
+    },
+    {
+      "path": ".diagram/.gitkeep",
+      "action": "created"
+    },
+    {
+      "path": ".diagram/context/diagram-context.md",
+      "action": "created"
+    },
+    {
+      "path": ".mise.toml",
+      "action": "created"
+    },
+    {
+      "path": "scripts/codex-learn",
+      "action": "created"
+    },
+    {
+      "path": "scripts/codex-enforced",
+      "action": "created"
+    },
+    {
+      "path": "scripts/verify-work.sh",
+      "action": "created"
+    },
+    {
+      "path": "scripts/prepare-worktree.sh",
+      "action": "created"
+    },
+    {
+      "path": "scripts/harness-cli.sh",
+      "action": "created"
+    },
+    {
+      "path": ".github/CODEOWNERS",
+      "action": "created"
+    },
+    {
+      "path": "WORKFLOW.md",
+      "action": "created"
     }
-  ]
+  ],
+  "issueTracker": "github"
 }

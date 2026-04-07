@@ -5,28 +5,32 @@
       "role": "primary governance contract"
     },
     {
-      "path": "contracts/browser-evidence.schema.json",
-      "role": "primary JSON schema"
+      "path": "package.json",
+      "role": "project scripts and package metadata"
     },
     {
-      "path": "src/lib/contract/types.ts",
-      "role": "contract type definitions"
+      "path": "README.md",
+      "role": "operator-facing setup and workflow docs"
     },
     {
-      "path": "src/cli.ts",
-      "role": "CLI entrypoint and command surface"
+      "path": "CONTRIBUTING.md",
+      "role": "contributor governance requirements"
     },
     {
-      "path": "src/cli-dispatch.ts",
-      "role": "command dispatch API"
+      "path": ".github/workflows/pr-pipeline.yml",
+      "role": "required checks workflow"
     }
   ],
   "apiSpecs": [
-    "src/cli.ts",
-    "src/commands/**/*.ts"
+    "contracts/**/*.schema.json",
+    "openapi/**/*.json",
+    "openapi/**/*.yaml",
+    "src/**/*.ts"
   ],
   "schemaFiles": [
     "contracts/**/*.schema.json",
-    "src/lib/contract/types.ts"
+    "schemas/**/*.json",
+    "openapi/**/*.json",
+    "openapi/**/*.yaml"
   ]
 }

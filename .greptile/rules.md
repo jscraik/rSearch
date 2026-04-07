@@ -1,49 +1,33 @@
-# coding-harness Greptile rules
+# Harness-managed Greptile rules
 
 ## Scope
 
-These rules define repository-specific review expectations for Greptile.
+These rules define the baseline Greptile review expectations for harness-managed repositories.
 
 ## Rule set
 
 ### 1) Independent validation is mandatory
 
 - The coding agent must not act as approving reviewer on the same PR.
-- Greptile/Codex artifacts must be produced by an independent review step.
+- Every merge-ready decision requires an independent review signal.
 
-### 2) Governance contract and docs must remain aligned
+### 2) Governance surfaces must stay aligned
 
-If a PR changes any of the following, reviewers must verify consistency across all touched files:
+If a PR changes governance, workflow, or policy files, reviewers must verify consistency across:
 
-- `/harness.contract.json`
-- `/AGENTS.md`
-- `/CONTRIBUTING.md`
-- `/docs/agents/07b-agent-governance.md`
-- `/.github/PULL_REQUEST_TEMPLATE.md`
+- `harness.contract.json`
+- `CONTRIBUTING.md`
+- `README.md`
+- `.github/PULL_REQUEST_TEMPLATE.md`
+- `.github/workflows/*.yml`
 
-### 3) ESM imports
+### 3) Policy changes require evidence
 
-All local imports in TypeScript source must use `.js` extension.
+- Policy, workflow, or review-gate changes must include test and validation evidence.
+- Any reduction in mandatory checks or review gates is high risk.
 
-**Violation example**
+### 4) Merge confidence threshold
 
-```ts
-import { runReviewGate } from "./commands/review-gate";
-```
-
-**Compliant example**
-
-```ts
-import { runReviewGate } from "./commands/review-gate.js";
-```
-
-### 4) Security and evidence
-
-- PRs changing policy/gate behavior must include test and evidence artifacts.
-- Any reduction in mandatory checks/review gates must be treated as high risk.
-
-### 5) Merge confidence threshold
-
-- Confidence < 4/5 is merge-blocking.
-- Confidence 4/5 may merge only when remaining items are non-logic polish.
-- Confidence 5/5 is merge-ready.
+- Confidence below `4/5` is merge-blocking.
+- Confidence `4/5` may merge only when remaining items are low-risk polish.
+- Confidence `5/5` is merge-ready.

@@ -1,2 +1,9 @@
-# rsearch issue template configuration
+# Issue template configuration
 blank_issues_enabled: false
+contact_links:
+  - name: Repository docs
+    url: https://github.com/jscraik/rSearch#readme
+    about: Review setup, workflow, and command documentation before opening new work.
+  - name: Private security disclosure
+    url: mailto:security@example.com
+    about: Report security vulnerabilities privately instead of using public issue flows.

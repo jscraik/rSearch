@@ -1,11 +1,12 @@
 name: Harness PR Pipeline
 
-on: pull_request
+on:
+  pull_request:
+  merge_group:
 
 permissions:
   contents: read
   pull-requests: read
-  checks: read
 
 jobs:
   pr-template:
@@ -13,7 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Validate PR template completion
-        uses: actions/github-script@v8
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
             const body = context.payload.pull_request?.body ?? '';
@@ -51,9 +53,13 @@ jobs:
               }
 
               const unchecked = checklistItems.filter((line) => /^- \[ \]/.test(line));
-              if (unchecked.length > 0) {
+              const unresolvedUnchecked = unchecked.filter(
+                (line) => !/\*\*\((pending|n\/a|not applicable)\)\*\*/i.test(line),
+              );
+              if (unresolvedUnchecked.length > 0) {
                 errors.push(
-                  'Checklist has unchecked item(s):\n' + unchecked.join('\n'),
+                  'Checklist has unchecked item(s) without explicit status marker ((Pending) or (N/A)):\n' +
+                    unresolvedUnchecked.join('\n'),
                 );
               }
             }
@@ -61,6 +67,8 @@ jobs:
             const placeholders = [
               'pass/fail',
               '<link / artifact path / comment ID>',
+              '<0-5>',
+              '<reviewer + link>',
               'Add one-paragraph merge rationale here.',
             ];
             for (const placeholder of placeholders) {
@@ -69,328 +77,269 @@ jobs:
               }
             }
 
+            const reviewArtifactsMatch = body.match(/## Review artifacts([\s\S]*?)(?:\n## |\n# |$)/i);
+            if (reviewArtifactsMatch) {
+              const reviewArtifactsBody = reviewArtifactsMatch[1] ?? '';
+              const unresolvedTokens = reviewArtifactsBody.match(/<[^>\n]+>/g) ?? [];
+              for (const token of unresolvedTokens) {
+                errors.push('Replace unresolved placeholder token: ' + token);
+              }
+            }
+
             if (errors.length > 0) {
               core.setFailed(errors.join('\n'));
             }
+      - name: Skip PR template enforcement for merge queue
+        if: github.event_name == 'merge_group'
+        run: echo "merge_group event detected; PR template enforcement is pull_request-only."
 
-  dependency-chain:
-    name: dependency-chain
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          version: "0.9.5"
-          enable-cache: true
-          cache-dependency-glob: |
-            **/pyproject.toml
-            **/uv.lock
-      - name: Install Ralph runtime (canonical + pinned-git fallback + opt-in pipx fallback)
-        env:
-          HARNESS_ALLOW_RALPH_PIPX_FALLBACK: ${{ vars.HARNESS_ALLOW_RALPH_PIPX_FALLBACK || 'false' }}
-        run: |
-          mkdir -p artifacts/policy
-          if uv tool install "ralph-gold==1.0.0"; then
-            exit 0
-          fi
-
-          if uv tool install "git+https://github.com/jscraik/ralph-gold.git@5d4b57537a29c3edb566665c9482ae5ca1d49eed"; then
-            cat > "artifacts/policy/ralph-fallback-warning.json" <<JSON
-          {
-            "warning": "ralph_runtime_fallback",
-            "reason": "pypi_package_unavailable",
-            "fallback": "uv_git",
-            "package": "ralph-gold==1.0.0",
-            "gitSpec": "git+https://github.com/jscraik/ralph-gold.git@5d4b57537a29c3edb566665c9482ae5ca1d49eed",
-            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-          }
-          JSON
-            exit 0
-          fi
-
-          if [ "${HARNESS_ALLOW_RALPH_PIPX_FALLBACK}" != "true" ]; then
-            echo "uv install failed for canonical and git fallback, and HARNESS_ALLOW_RALPH_PIPX_FALLBACK is not enabled."
-            exit 1
-          fi
-
-          python -m pip install --upgrade pip pipx
-          export PATH="$HOME/.local/bin:$PATH"
-          python -m pipx install "git+https://github.com/jscraik/ralph-gold.git@5d4b57537a29c3edb566665c9482ae5ca1d49eed" --force
-
-          cat > "artifacts/policy/ralph-fallback-warning.json" <<JSON
-          {
-            "warning": "ralph_runtime_fallback",
-            "reason": "uv_tool_install_failed",
-            "fallback": "pipx_git",
-            "package": "ralph-gold==1.0.0",
-            "gitSpec": "git+https://github.com/jscraik/ralph-gold.git@5d4b57537a29c3edb566665c9482ae5ca1d49eed",
-            "optInEnv": "HARNESS_ALLOW_RALPH_PIPX_FALLBACK",
-            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-          }
-          JSON
-      - name: Verify dependency chain
-        run: |
-          export PATH="$HOME/.local/bin:$PATH"
-          python3 --version
-          uv --version
-          if ! command -v ralph >/dev/null 2>&1; then
-            echo "Ralph executable not found after install attempts"
-            exit 1
-          fi
-          ralph --version
-      - uses: actions/setup-node@v6
-        with:
-          node-version: "24"
-      - name: Enable corepack
-        run: corepack enable
-      - name: Install dependencies for preflight smoke
-        run: npm install
-      - name: Ralph dependency smoke preflight
-        env:
-          CODEX_APPROVAL_POSTURE: require
-        run: |
-          export PATH="$HOME/.local/bin:$PATH"
-          ralph --version | tee artifacts/policy/ralph-version.txt
-          npx tsx src/cli.ts config --json > artifacts/policy/ralph-smoke-attestation.json
-      - name: Upload dependency policy artifacts
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: dependency-policy-artifacts
-          path: artifacts/policy/
-          if-no-files-found: ignore
 
   risk-policy-gate:
     name: risk-policy-gate
-    needs: [pr-template, dependency-chain]
     runs-on: ubuntu-latest
+    needs: [pr-template]
+    if: ${{ always() && (github.event_name == 'merge_group' || needs.pr-template.result == 'success') }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24"
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
         run: npm install
-      - name: Enforce docs drift baseline
+      - name: Run fast preflight policy gate
         run: |
-          if jq -e '.scripts["docs:lint"]' package.json >/dev/null; then
-            npm run docs:lint
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+            BASE_REF="${{ github.base_ref }}"
+            # Load contract from the trusted base branch, not the PR checkout.
+            # Prevents a malicious PR from weakening policy by modifying harness.contract.json.
+            CONTRACT_PATH="$RUNNER_TEMP/harness.contract.base.json"
+            if ! git show "origin/$BASE_REF:harness.contract.json" > "$CONTRACT_PATH"; then
+              echo "::error::Unable to load trusted harness.contract.json from origin/$BASE_REF"
+              exit 1
+            fi
           else
-            echo "docs:lint script missing; skipping docs drift baseline."
+            BASE_SHA="${{ github.event.merge_group.base_sha }}"
+            HEAD_SHA="${{ github.event.merge_group.head_sha }}"
+            # Merge queue: contract is committed and protected by branch rules.
+            CONTRACT_PATH="harness.contract.json"
           fi
-      - name: Run risk-policy gate
-        run: |
-          mkdir -p artifacts/telemetry
-          START_MS="$(date +%s%3N)"
-          CHANGED_FILES="$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" | paste -sd, -)"
-          set +e
-          if [ -f harness.contract.json ] && npx tsx src/cli.ts --help | grep -q "risk-policy-gate"; then
-            npx tsx src/cli.ts risk-policy-gate --contract harness.contract.json --files "$CHANGED_FILES" --max-tier medium
-            STATUS=$?
-          else
-            echo "risk-policy-gate unsupported or harness.contract.json missing; skipping."
-            STATUS=0
+          CHANGED_FILES="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" | paste -sd, -)"
+          if [[ -z "$CHANGED_FILES" ]]; then
+            CHANGED_FILES="$(git ls-files | paste -sd, -)"
           fi
-          set -e
-          END_MS="$(date +%s%3N)"
-          DURATION_MS="$((END_MS - START_MS))"
-          cat > artifacts/telemetry/risk-policy-gate.json <<JSON
-          {
-            "stage": "risk-policy-gate",
-            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
-            "head_sha": "${{ github.event.pull_request.head.sha }}",
-            "codex.tool.call.duration_ms": ${DURATION_MS},
-            "codex.api_request.duration_ms": 0
-          }
-          JSON
-          exit "${STATUS}"
-      - name: Upload risk-policy telemetry artifacts
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: risk-policy-telemetry-artifacts
-          path: artifacts/telemetry/risk-policy-gate.json
-          if-no-files-found: error
+          pnpm exec tsx src/cli.ts preflight-gate \
+            --contract "$CONTRACT_PATH" \
+            --max-tier medium \
+            --files "${CHANGED_FILES}" \
+            --json
 
-  review-gate:
-    name: review-gate
+  dependency-review:
+    name: dependency-review
+    runs-on: ubuntu-latest
     needs: [risk-policy-gate]
-    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Detect dependency review support
+        id: dependency-review-support
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
-          node-version: "24"
-      - name: Enable corepack
-        run: corepack enable
-      - name: Install dependencies
-        run: npm install
-      - name: Run review gate against current SHA
-        run: |
-          mkdir -p artifacts/telemetry
-          START_MS="$(date +%s%3N)"
-          set +e
-          if [ -f harness.contract.json ] && npx tsx src/cli.ts --help | grep -q "review-gate"; then
-            npx tsx src/cli.ts review-gate             --token "${{ secrets.GITHUB_TOKEN }}"             --owner "${{ github.repository_owner }}"             --repo "${{ github.event.repository.name }}"             --pr "${{ github.event.pull_request.number }}"             --sha "${{ github.event.pull_request.head.sha }}"             --check "risk-policy-gate"             --contract harness.contract.json
-            STATUS=$?
-          else
-            echo "review-gate unsupported or harness.contract.json missing; skipping."
-            STATUS=0
-          fi
-          set -e
-          END_MS="$(date +%s%3N)"
-          DURATION_MS="$((END_MS - START_MS))"
-          cat > artifacts/telemetry/review-gate.json <<JSON
-          {
-            "stage": "review-gate",
-            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
-            "head_sha": "${{ github.event.pull_request.head.sha }}",
-            "codex.tool.call.duration_ms": ${DURATION_MS},
-            "codex.api_request.duration_ms": ${DURATION_MS}
-          }
-          JSON
-          exit "${STATUS}"
-      - name: Upload review telemetry artifacts
-        if: always()
-        uses: actions/upload-artifact@v7
+          script: |
+            const { owner, repo } = context.repo;
+            const response = await github.rest.repos.get({ owner, repo });
+            const security = response.data.security_and_analysis ?? {};
+            const advanced = security.advanced_security?.status === 'enabled';
+            const dependencyGraph = security.dependency_graph?.status === 'enabled';
+            core.setOutput('supported', advanced && dependencyGraph ? 'true' : 'false');
+      - name: Run dependency review (pull_request)
+        if: github.event_name == 'pull_request' && ${{ steps.dependency-review-support.outputs.supported == 'true' }}
+        uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4.9.0
         with:
-          name: review-telemetry-artifacts
-          path: artifacts/telemetry/review-gate.json
-          if-no-files-found: error
+          fail-on-severity: high
+      - name: Skip dependency review when repository support is unavailable
+        if: github.event_name == 'pull_request' && ${{ steps.dependency-review-support.outputs.supported != 'true' }}
+        run: echo "Dependency review unsupported (requires dependency graph + advanced security); skipping."
+      - name: Skip dependency review for merge queue
+        if: github.event_name == 'merge_group'
+        run: echo "Dependency review enforced on pull_request; merge_group runs are no-op."
 
-  evidence-verify:
-    name: evidence-verify
-    needs: [review-gate]
+  actions-pinning:
+    name: actions-pinning
     runs-on: ubuntu-latest
+    needs: [risk-policy-gate]
     steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-node@v6
-        with:
-          node-version: "24"
-      - name: Enable corepack
-        run: corepack enable
-      - name: Install dependencies
-        run: npm install
-      - name: Capture browser evidence fixture
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Enforce pinned GitHub Actions
+        shell: bash
         run: |
-          mkdir -p artifacts/evidence
-          cat <<'PNG_BASE64' | base64 --decode > artifacts/evidence/loop-stage-smoke.png
-          iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO5s6wAAAABJRU5ErkJggg==
-          PNG_BASE64
-      - name: Verify evidence contract
-        run: |
-          mkdir -p artifacts/telemetry
-          START_MS="$(date +%s%3N)"
-          CHANGED_FILES="$(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" | paste -sd, -)"
-          set +e
-          if [ -f harness.contract.json ] && npx tsx src/cli.ts --help | grep -q "evidence-verify"; then
-            npx tsx src/cli.ts evidence-verify --contract harness.contract.json --files artifacts/evidence/loop-stage-smoke.png --changed "$CHANGED_FILES"
-            STATUS=$?
-          else
-            echo "evidence-verify unsupported or harness.contract.json missing; skipping."
-            STATUS=0
-          fi
-          set -e
-          END_MS="$(date +%s%3N)"
-          DURATION_MS="$((END_MS - START_MS))"
-          cat > artifacts/telemetry/evidence-verify.json <<JSON
-          {
-            "stage": "evidence-verify",
-            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
-            "head_sha": "${{ github.event.pull_request.head.sha }}",
-            "codex.tool.call.duration_ms": ${DURATION_MS},
-            "codex.api_request.duration_ms": 0
-          }
-          JSON
-          exit "${STATUS}"
-      - name: Upload evidence artifacts
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: browser-evidence-artifacts
-          path: artifacts/evidence/
-          if-no-files-found: error
-      - name: Upload evidence telemetry artifacts
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: evidence-telemetry-artifacts
-          path: artifacts/telemetry/evidence-verify.json
-          if-no-files-found: error
+          set -euo pipefail
+          violations=0
+          while IFS=: read -r file line raw; do
+            ref="$(printf "%s" "$raw" | sed -E 's/^[[:space:]]*(-[[:space:]]*)?uses:[[:space:]]*([^[:space:]#]+).*/\2/')"
+            if [[ "$ref" == ./* ]] || [[ "$ref" == docker://* ]]; then
+              continue
+            fi
+            if [[ ! "$ref" =~ @[0-9a-f]{40}$ ]]; then
+              echo "::error file=$file,line=$line::Action is not pinned to a full commit SHA: $ref"
+              violations=1
+            fi
+          done < <(rg -n "^[[:space:]]*(-[[:space:]]*)?uses:[[:space:]]*[^[:space:]]+" .github/workflows/*.yml)
+          exit "$violations"
 
-  remediation-decision:
-    name: remediation-decision
-    needs: [evidence-verify]
+  consistency-drift-advisory:
+    name: consistency-drift-advisory
     runs-on: ubuntu-latest
+    needs: [risk-policy-gate]
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: write
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24"
       - name: Enable corepack
         run: corepack enable
       - name: Install dependencies
         run: npm install
-      - name: Run remediation-decision stage (plan only)
+      - name: Prepare baseline seed fallback
         run: |
-          mkdir -p artifacts/remediation
-          mkdir -p artifacts/telemetry
-          START_MS="$(date +%s%3N)"
-          echo "[]" > artifacts/remediation/findings.json
-          set +e
-          if [ -f harness.contract.json ] && npx tsx src/cli.ts --help | grep -q "remediate"; then
-            npx tsx src/cli.ts remediate run --findings artifacts/remediation/findings.json --contract harness.contract.json --mode run --json
-            STATUS=$?
-          else
-            echo "remediate command unsupported or harness.contract.json missing; skipping."
-            STATUS=0
-          fi
-          set -e
-          END_MS="$(date +%s%3N)"
-          DURATION_MS="$((END_MS - START_MS))"
-          cat > artifacts/telemetry/remediation-decision.json <<JSON
+          mkdir -p artifacts/consistency-gate
+          if [[ ! -f artifacts/consistency-gate/consistency-baseline-latest.json ]]; then
+            cat > artifacts/consistency-gate/consistency-baseline-latest.json <<'JSON'
           {
-            "stage": "remediation-decision",
-            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
-            "head_sha": "${{ github.event.pull_request.head.sha }}",
-            "codex.tool.call.duration_ms": ${DURATION_MS},
-            "codex.api_request.duration_ms": 0
+            "schemaVersion": "1.0.0",
+            "findings": []
           }
           JSON
-          exit "${STATUS}"
-      - name: Upload remediation artifacts
+          fi
+      - name: Run advisory drift gate
+        run: |
+          pnpm exec tsx src/cli.ts drift-gate \
+            --mode advisory \
+            --json \
+            --out artifacts/consistency-gate/consistency-drift-advisory-latest.json
+      - name: Advisory guard (soft-fail)
+        run: |
+          if [[ ! -s artifacts/consistency-gate/consistency-drift-advisory-latest.json ]]; then
+            echo "::warning::advisory report missing; writing fallback stub."
+            cat > artifacts/consistency-gate/consistency-drift-advisory-latest.json <<'JSON'
+          {
+            "schemaVersion": "1.0.0",
+            "command": "drift-gate",
+            "mode": "advisory",
+            "status": "blocked",
+            "outcome": "error",
+            "error_class": "io",
+            "generated_at": "1970-01-01T00:00:00.000Z",
+            "repo_root": ".",
+            "baseline": { "path": "artifacts/consistency-gate/consistency-baseline-latest.json", "loaded": false, "reason": "missing_report_output" },
+            "summary": { "finding_count": 1, "new_count": 1, "preexisting_count": 0, "error_count": 1 },
+            "findings": [
+              {
+                "rule_id": "report.output.missing",
+                "surface": "status",
+                "rule_result": "error",
+                "severity": "error",
+                "baseline_state": "new",
+                "message": "Advisory report missing; generated fallback stub."
+              }
+            ]
+          }
+          JSON
+          fi
+      - name: Upload advisory artifact
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: remediation-decision-artifacts
-          path: artifacts/remediation/
-          if-no-files-found: error
-      - name: Upload remediation telemetry artifacts
+          name: consistency-drift-advisory-latest
+          path: artifacts/consistency-gate/consistency-drift-advisory-latest.json
+
+  consistency-drift-health:
+    name: consistency-drift-health
+    runs-on: ubuntu-latest
+    needs: [risk-policy-gate]
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: npm install
+      - name: Detect baseline seed
+        id: baseline-seed
+        run: |
+          mkdir -p artifacts/consistency-gate
+          if [[ -f artifacts/consistency-gate/consistency-baseline-latest.json ]]; then
+            echo "seeded=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "seeded=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Run health drift gate
+        if: steps.baseline-seed.outputs.seeded == 'true'
+        run: |
+          pnpm exec tsx src/cli.ts drift-gate \
+            --mode health \
+            --json \
+            --out artifacts/consistency-gate/health.json
+      - name: Bootstrap health warning (first-run)
+        if: steps.baseline-seed.outputs.seeded != 'true'
+        run: |
+          cat > artifacts/consistency-gate/health.json <<'JSON'
+          {
+            "schemaVersion": "1.0.0",
+            "command": "drift-gate",
+            "mode": "health",
+            "status": "partial",
+            "outcome": "ok",
+            "error_class": "none",
+            "generated_at": "1970-01-01T00:00:00.000Z",
+            "repo_root": ".",
+            "baseline": { "path": "artifacts/consistency-gate/consistency-baseline-latest.json", "loaded": false, "reason": "bootstrap_seed_missing" },
+            "summary": { "finding_count": 1, "new_count": 1, "preexisting_count": 0, "error_count": 0 },
+            "findings": [
+              {
+                "rule_id": "baseline.seed.bootstrap",
+                "surface": "status",
+                "rule_result": "not_applicable",
+                "severity": "info",
+                "baseline_state": "new",
+                "message": "Health check running in bootstrap mode until baseline seed is published on default branch."
+              }
+            ]
+          }
+          JSON
+          echo "::warning::consistency-drift-health running in bootstrap mode (baseline seed missing)."
+      - name: Upload health artifact
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: remediation-telemetry-artifacts
-          path: artifacts/telemetry/remediation-decision.json
-          if-no-files-found: error
+          name: consistency-drift-health-latest
+          path: artifacts/consistency-gate/health.json
 
   lint:
     name: lint
-    needs: [pr-template, dependency-chain, remediation-decision]
     runs-on: ubuntu-latest
+    needs: [risk-policy-gate]
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24"
       - name: Enable corepack
@@ -398,21 +347,15 @@ jobs:
       - name: Install dependencies
         run: npm install
       - name: Run lint
-        run: |
-          if jq -e '.scripts.lint' package.json >/dev/null; then
-            npm run lint
-          else
-            echo "lint script missing; running typecheck as fallback."
-            npm run typecheck
-          fi
+        run: npm run lint
 
   typecheck:
     name: typecheck
-    needs: [pr-template, dependency-chain, remediation-decision]
     runs-on: ubuntu-latest
+    needs: [risk-policy-gate]
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24"
       - name: Enable corepack
@@ -424,11 +367,11 @@ jobs:
 
   test:
     name: test
-    needs: [pr-template, dependency-chain, remediation-decision]
     runs-on: ubuntu-latest
+    needs: [risk-policy-gate]
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24"
       - name: Enable corepack
@@ -438,13 +381,29 @@ jobs:
       - name: Run tests
         run: npm run test
 
+  audit:
+    name: audit
+    runs-on: ubuntu-latest
+    needs: [risk-policy-gate]
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24"
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: npm install
+      - name: Run audit
+        run: npm run audit
+
   check:
     name: check
-    needs: [pr-template, dependency-chain, remediation-decision]
     runs-on: ubuntu-latest
+    needs: [risk-policy-gate]
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24"
       - name: Enable corepack
@@ -452,52 +411,13 @@ jobs:
       - name: Install dependencies
         run: npm install
       - name: Run full check
-        run: |
-          if jq -e '.scripts.check' package.json >/dev/null; then
-            npm run check
-          else
-            echo "check script missing; running ci as fallback."
-            npm run ci
-          fi
-
-  security-scan:
-    name: security-scan
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-node@v6
-        with:
-          node-version: "24"
-      - name: Enable corepack
-        run: corepack enable
-      - name: Install dependencies
-        run: npm install
-      - name: Run pnpm audit
-        run: npm run audit --audit-level=moderate
-      - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Setup Trivy
-        uses: aquasecurity/setup-trivy@v0.2.6
-        with:
-          version: v0.69.3
-      - name: Run Trivy filesystem scan
-        run: trivy fs --severity HIGH,CRITICAL --exit-code 1 --no-progress .
-      - name: Run Semgrep scan
-        uses: returntocorp/semgrep-action@v1
-        with:
-          config: p/security-audit
+        run: npm run check
 
   memory:
     name: memory
     runs-on: ubuntu-latest
+    needs: [risk-policy-gate]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - name: Validate memory.json
         run: test -f memory.json && jq -e '.meta.version == "1.0" and (.preamble.bootstrap | type == "boolean") and (.preamble.search | type == "boolean") and (.entries | type == "array")' memory.json >/dev/null
