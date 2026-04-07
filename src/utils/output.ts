@@ -8,6 +8,17 @@ import { VERSION } from "../version.js";
  *
  * @public
  */
+export type RobotNote = {
+  /** Machine-readable note kind (e.g., "corrected_command", "corrected_flag", "normalized_id") */
+  kind: string;
+  /** Human-readable description of what was corrected or suggested */
+  message: string;
+  /** The original value (before correction) */
+  original?: string;
+  /** The corrected value that was applied */
+  corrected?: string;
+};
+
 export type JsonEnvelope<T> = {
   /** Schema identifier (e.g., "arxiv.output.v1") */
   schema: string;
@@ -30,6 +41,8 @@ export type JsonEnvelope<T> = {
   data: T;
   /** Array of error codes (present when status is "error") */
   errors: string[];
+  /** Corrective or informational notes (populated in robot mode) */
+  notes?: RobotNote[];
 };
 
 /**
@@ -50,7 +63,8 @@ export const createEnvelope = <T>(
   data: T,
   summary: string,
   status: "success" | "warn" | "error" = "success",
-  errors: string[] = []
+  errors: string[] = [],
+  notes?: RobotNote[]
 ): JsonEnvelope<T> => ({
   schema,
   meta: {
@@ -61,7 +75,8 @@ export const createEnvelope = <T>(
   summary,
   status,
   data,
-  errors
+  errors,
+  ...(notes && notes.length > 0 ? { notes } : {})
 });
 
 /**
