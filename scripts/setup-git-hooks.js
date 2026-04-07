@@ -3,7 +3,7 @@
  * Configure simple-git-hooks for rsearch (npm-based workflow).
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync, renameSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, renameSync } from "node:fs";
 import { resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 
