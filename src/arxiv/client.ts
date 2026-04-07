@@ -3,8 +3,8 @@ import { parseAtom } from "./parser.js";
 import type { ArxivEntry, ArxivSearchOptions, ArxivSearchResult } from "./types.js";
 import { RateLimiter } from "./rateLimiter.js";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
-import { createHash } from "node:crypto";
+import { dirname, resolve, sep } from "node:path";
+import { createHash, randomUUID } from "node:crypto";
 import { VERSION } from "../version.js";
 import { fileExists } from "../utils/io.js";
 
@@ -323,8 +323,22 @@ export class ArxivClient {
 
     for (const id of ids) {
       const safeId = id.replace(/\s+/g, "").replace(/\.pdf$/i, "");
-      const filename = `${safeId}.pdf`;
+      // Block path traversal: reject ".." segments and leading/absolute paths,
+      // but allow legacy arXiv IDs with internal slashes (e.g. cs.AI/0001001).
+      if (safeId.includes("..") || safeId.startsWith("/") || safeId.startsWith("\\")) {
+        results.push({ id: safeId, path: "", status: "failed", error: "Invalid arXiv ID" });
+        continue;
+      }
+      // Sanitize slashes for the filesystem filename while preserving the ID
+      const filename = `${safeId.replace(/\//g, "_")}.pdf`;
       const outputPath = resolve(outputDir, filename);
+
+      // Validate resolved path stays within output directory
+      const outputDirResolved = resolve(outputDir);
+      if (!outputPath.startsWith(outputDirResolved + sep) && outputPath !== outputDirResolved) {
+        results.push({ id: safeId, path: "", status: "failed", error: "Invalid output path" });
+        continue;
+      }
 
       try {
         const exists = await fileExists(outputPath);
@@ -575,17 +589,18 @@ const readDiskCache = async (
   ttlMs?: number
 ): Promise<string | null> => {
   const filename = cacheFilenameForUrl(url);
-  const path = resolve(cacheDir, filename);
+  const filePath = resolve(cacheDir, filename);
 
   try {
-    const stats = await stat(path);
+    const content = await readFile(filePath, "utf8");
     if (typeof ttlMs === "number") {
+      const stats = await stat(filePath);
       const ageMs = Date.now() - stats.mtimeMs;
       if (ageMs > ttlMs) {
         return null;
       }
     }
-    return await readFile(path, "utf8");
+    return content;
   } catch {
     return null;
   }
@@ -597,7 +612,12 @@ const writeDiskCache = async (
   payload: string
 ): Promise<void> => {
   const filename = cacheFilenameForUrl(url);
-  const path = resolve(cacheDir, filename);
-  await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, payload, "utf8");
+  const filePath = resolve(cacheDir, filename);
+  await mkdir(dirname(filePath), { recursive: true });
+  // Use unique temp file per write to avoid races when concurrent requests
+  // resolve the same URL
+  const tmpPath = `${filePath}.tmp-${randomUUID()}`;
+  await writeFile(tmpPath, payload, "utf8");
+  const { rename } = await import("node:fs/promises");
+  await rename(tmpPath, filePath);
 };

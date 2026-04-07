@@ -1,0 +1,10 @@
+prompt: |
+  "Fix all outstanding PRs and dependabot findings in vulnerabilities and code scanning"
+model: glm-5.1
+date: 2026-04-07
+scope: |
+  - Bump vulnerable dependencies (vite, fast-xml-parser, vitest, picomatch)
+  - Fix CodeQL code scanning alerts (shell injection, TOCTOU races, path traversal, ReDoS)
+  - Close superseded Dependabot PRs #39-42
+artifacts:
+  - ai/sessions/2026-04-07-security-remediation.json

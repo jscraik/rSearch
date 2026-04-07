@@ -60,7 +60,7 @@
   "homepage": "https://github.com/jscraik/rSearch#readme",
   "dependencies": {
     "cheerio": "^1.2.0",
-    "fast-xml-parser": "^5.3.4",
+    "fast-xml-parser": "^5.5.10",
     "pdf-parse": "^2.4.5",
     "yargs": "^18.0.0",
     "zod": "^4.3.6"
@@ -74,7 +74,8 @@
     "typedoc": "^0.28.17",
     "typedoc-plugin-markdown": "^4.10.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.18"
+    "vite": "^8.0.5",
+    "vitest": "^4.1.2"
   },
   "overrides": {
     "minimatch": "^10.2.1",
