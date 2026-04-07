@@ -710,8 +710,13 @@ const loadTaxonomy = async (args: RefreshArgs): Promise<TaxonomyResult> => {
   );
 };
 
-const normalizeArxivId = (id: string): string =>
-  id.replace(/\s+/g, "").replace(/\.pdf$/i, "").replace(/v\d+$/i, "");
+const normalizeArxivId = (id: string): string => {
+  const safeId = id.replace(/\s+/g, "").replace(/\.pdf$/i, "").replace(/v\d+$/i, "");
+  if (safeId.includes("/") || safeId.includes("..") || safeId.includes("\\")) {
+    throw new CliError(`Invalid arXiv ID: ${id}`, 2, "E_VALIDATION");
+  }
+  return safeId;
+};
 
 const mapEntriesByBaseId = (entries: ArxivEntry[]) => {
   const map = new Map<string, ArxivEntry>();

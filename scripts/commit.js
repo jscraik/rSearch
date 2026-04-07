@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { createInterface } from 'readline';
 
 const rl = createInterface({
@@ -74,7 +74,7 @@ async function createCommit() {
     }
 
     try {
-        execSync(`git commit -m "${message.replace(/"/g, '\\"')}"`, { stdio: 'inherit' });
+        execFileSync('git', ['commit', '-m', message], { stdio: 'inherit' });
         console.log('✅ Commit created successfully!');
     } catch (error) {
         console.log('❌ Commit failed:', error.message);

@@ -323,8 +323,18 @@ export class ArxivClient {
 
     for (const id of ids) {
       const safeId = id.replace(/\s+/g, "").replace(/\.pdf$/i, "");
+      if (safeId.includes("/") || safeId.includes("..") || safeId.includes("\\")) {
+        results.push({ id: safeId, path: "", status: "failed", error: "Invalid arXiv ID" });
+        continue;
+      }
       const filename = `${safeId}.pdf`;
       const outputPath = resolve(outputDir, filename);
+
+      // Validate resolved path stays within output directory
+      if (!outputPath.startsWith(resolve(outputDir))) {
+        results.push({ id: safeId, path: "", status: "failed", error: "Invalid output path" });
+        continue;
+      }
 
       try {
         const exists = await fileExists(outputPath);
@@ -575,17 +585,18 @@ const readDiskCache = async (
   ttlMs?: number
 ): Promise<string | null> => {
   const filename = cacheFilenameForUrl(url);
-  const path = resolve(cacheDir, filename);
+  const filePath = resolve(cacheDir, filename);
 
   try {
-    const stats = await stat(path);
+    const content = await readFile(filePath, "utf8");
     if (typeof ttlMs === "number") {
+      const stats = await stat(filePath);
       const ageMs = Date.now() - stats.mtimeMs;
       if (ageMs > ttlMs) {
         return null;
       }
     }
-    return await readFile(path, "utf8");
+    return content;
   } catch {
     return null;
   }
@@ -597,7 +608,10 @@ const writeDiskCache = async (
   payload: string
 ): Promise<void> => {
   const filename = cacheFilenameForUrl(url);
-  const path = resolve(cacheDir, filename);
-  await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, payload, "utf8");
+  const filePath = resolve(cacheDir, filename);
+  await mkdir(dirname(filePath), { recursive: true });
+  const tmpPath = filePath + ".tmp";
+  await writeFile(tmpPath, payload, "utf8");
+  const { rename } = await import("node:fs/promises");
+  await rename(tmpPath, filePath);
 };

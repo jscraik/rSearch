@@ -99,10 +99,11 @@ export const buildQuery = (
   return { url, query: params.toString(), params };
 };
 
+const COMMA_SEPARATOR = /,\s*/;
 const normalizeList = (value: string[] | undefined): string[] | undefined => {
   if (!value) return undefined;
   return value
-    .flatMap((item) => item.split(/\s*,\s*/))
+    .flatMap((item) => item.split(COMMA_SEPARATOR))
     .map((item) => item.trim())
     .filter(Boolean);
 };
