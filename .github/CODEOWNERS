@@ -1,0 +1,10 @@
+# Governance-sensitive surfaces
+/.github/workflows/** @jscraik
+/harness.contract.json @jscraik
+/CONTRIBUTING.md @jscraik
+/AGENTS.md @jscraik
+/scripts/codex-preflight.sh @jscraik
+/scripts/verify-work.sh @jscraik
+/scripts/prepare-worktree.sh @jscraik
+/scripts/harness-cli.sh @jscraik
+/scripts/check-environment.sh @jscraik
