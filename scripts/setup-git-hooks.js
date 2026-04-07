@@ -102,9 +102,12 @@ function main() {
 		console.info("✓ Required simple-git-hooks configuration already present");
 	}
 
-	// Write changes if modified
+	// Write changes if modified (atomic write via tmp + rename to avoid TOCTOU)
 	if (modified) {
-		writeFileSync(PACKAGE_JSON_PATH, JSON.stringify(packageJson, null, 2) + "\n");
+		const { renameSync } = require("node:fs");
+		const tmpPath = PACKAGE_JSON_PATH + ".tmp";
+		writeFileSync(tmpPath, JSON.stringify(packageJson, null, 2) + "\n");
+		renameSync(tmpPath, PACKAGE_JSON_PATH);
 		console.info("\n✓ package.json updated");
 	}
 

@@ -20,7 +20,7 @@ import { VERSION } from "./version.js";
 import { fetchTaxonomy } from "./arxiv/taxonomy.js";
 import { extractPdfText } from "./utils/pdf.js";
 import { filterByLicense, hasLicenseMetadata } from "./arxiv/license.js";
-import { access, mkdir, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 
 // Type definitions for CLI arguments
@@ -1122,7 +1122,12 @@ const downloadAsTextFormats = async ({
         const pdfPath = resolve(outputDir, `${safeId}.pdf`);
         const pdfExists = await fileExists(pdfPath);
         if (!pdfExists || overwrite) {
-          await writeFile(pdfPath, pdfBuffer);
+          // Validate the buffer looks like a PDF before writing to disk
+          const PDF_MAGIC = 0x25_50_44_46; // "%PDF"
+          const header = new DataView(pdfBuffer.buffer, pdfBuffer.byteOffset, Math.min(4, pdfBuffer.byteLength));
+          if (pdfBuffer.byteLength >= 4 && header.getUint32(0) === PDF_MAGIC) {
+            await writeFile(pdfPath, pdfBuffer);
+          }
         }
       }
 

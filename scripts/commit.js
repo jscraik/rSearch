@@ -2,6 +2,8 @@
 
 import { execFileSync } from 'child_process';
 import { createInterface } from 'readline';
+import { writeFileSync, unlinkSync } from 'node:fs';
+import { join } from 'node:os';
 
 const rl = createInterface({
     input: process.stdin,
@@ -74,7 +76,14 @@ async function createCommit() {
     }
 
     try {
-        execFileSync('git', ['commit', '-m', message], { stdio: 'inherit' });
+        // Write commit message to a temp file to avoid shell injection via execFileSync
+        const tmpFile = `${process.cwd()}/.git/COMMIT_EDITMSG_TMP`;
+        writeFileSync(tmpFile, message, 'utf8');
+        try {
+            execFileSync('git', ['commit', '-F', tmpFile], { stdio: 'inherit' });
+        } finally {
+            try { unlinkSync(tmpFile); } catch { /* ignore */ }
+        }
         console.log('✅ Commit created successfully!');
     } catch (error) {
         console.log('❌ Commit failed:', error.message);

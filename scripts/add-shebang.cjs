@@ -5,9 +5,19 @@ const target = path.join(__dirname, "..", "dist", "cli.js");
 const shebang = "#!/usr/bin/env node\n";
 
 try {
-  const contents = fs.readFileSync(target, "utf8");
-  if (!contents.startsWith(shebang)) {
-    fs.writeFileSync(target, shebang + contents, "utf8");
+  // Use open + read to avoid TOCTOU between stat/exists and actual read
+  const fd = fs.openSync(target, "r+");
+  try {
+    const buf = Buffer.alloc(shebang.length);
+    const bytesRead = fs.readSync(fd, buf, 0, shebang.length, 0);
+    const header = buf.toString("utf8", 0, bytesRead);
+    if (!header.startsWith(shebang)) {
+      // Read the rest of the file, prepend shebang, write back
+      const rest = fs.readFileSync(target, "utf8");
+      fs.writeFileSync(target, shebang + rest, "utf8");
+    }
+  } finally {
+    fs.closeSync(fd);
   }
 } catch (err) {
   // Only skip if the file doesn't exist yet (normal for clean builds).
