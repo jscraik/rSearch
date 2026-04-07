@@ -636,6 +636,7 @@ const cli = yargs(argvForYargs)
           });
         }
 
+        const hasAnyFails = dryRunResults.some((r) => r.status === "would-fail");
         const hasLicenseFails = dryRunResults.some((r) => r.status === "would-fail" && r.error === "License metadata missing");
         await outputResult({
           args,
@@ -645,9 +646,9 @@ const cli = yargs(argvForYargs)
           plain: formatDownloadHuman(dryRunResults),
           human: formatDownloadHuman(dryRunResults),
           quietText: "",
-          status: hasLicenseFails ? "warn" : "success",
-          exitCode: hasLicenseFails ? 3 : 0,
-          errors: hasLicenseFails ? ["license_metadata_missing"] : []
+          status: hasAnyFails ? "warn" : "success",
+          exitCode: hasAnyFails ? (hasLicenseFails ? 3 : 4) : 0,
+          errors: hasAnyFails ? (hasLicenseFails ? ["license_metadata_missing"] : ["dry_run_failure"]) : []
         });
         return;
       }
@@ -1357,8 +1358,8 @@ const isJsonRequested = (args?: unknown): boolean => {
   if (envOutput === "json") return true;
   // If env var explicitly requests plain/quiet, honor that over non-TTY fallback
   if (envOutput === "plain" || envOutput === "quiet") return false;
-  // Non-TTY auto-json (unless --plain or --quiet override)
-  if (!process.argv.includes("--plain") && !process.argv.includes("--quiet") && !process.stdout.isTTY) return true;
+  // Non-TTY auto-json (unless --plain, --quiet, or -q override)
+  if (!process.argv.includes("--plain") && !process.argv.includes("--quiet") && !process.argv.includes("-q") && !process.stdout.isTTY) return true;
   return false;
 };
 

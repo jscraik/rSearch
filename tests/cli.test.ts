@@ -120,7 +120,19 @@ describe("cli download --dry-run", () => {
 
   it("shows --dry-run in download help", () => {
     const result = runCli(["download", "--help"]);
+
     expect(result.stdout).toContain("--dry-run");
+  });
+
+  it("returns warn status for dry-run with invalid ID", () => {
+    const result = runCli(["download", "....", "--dry-run", "--json"]);
+
+    expect(result.status).toBe(4);
+    const payload = JSON.parse(result.stdout);
+    expect(payload.schema).toBe("arxiv.download.dryrun.v1");
+    expect(payload.status).toBe("warn");
+    expect(payload.data.results[0].status).toBe("would-fail");
+    expect(payload.errors).toContain("dry_run_failure");
   });
 });
 
@@ -148,6 +160,14 @@ describe("cli output mode detection", () => {
 
     expect(result.status).toBe(0);
     // --plain config outputs JSON.stringify (no tabs), just verify it's not the envelope format
+    expect(result.stdout).not.toContain('"schema"');
+  });
+
+  it("-q alias prevents JSON auto-detection on non-TTY", () => {
+    const result = runCli(["config", "-q"], undefined, { RSEARCH_OUTPUT: "json" });
+
+    expect(result.status).toBe(0);
+    // -q should be treated like --quiet, suppressing JSON envelope
     expect(result.stdout).not.toContain('"schema"');
   });
 });
