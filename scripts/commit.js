@@ -3,7 +3,6 @@
 import { execFileSync } from 'child_process';
 import { createInterface } from 'readline';
 import { writeFileSync, unlinkSync } from 'node:fs';
-import { join } from 'node:os';
 
 const rl = createInterface({
     input: process.stdin,
