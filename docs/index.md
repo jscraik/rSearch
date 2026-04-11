@@ -63,7 +63,7 @@ node dist/cli.js search "cat:cs.AI" --require-license
 - See: `docs/release-policy.md`
 
 ### Review hook-governance scope defaults
-- See: `docs/hooks-governance/scope-policy.md`
+- See: [hooks-governance/scope-policy.md](hooks-governance/scope-policy.md)
 
 ## Risks and assumptions
 - Assumes filenames and paths stay stable across releases.

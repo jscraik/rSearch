@@ -104,6 +104,9 @@ run_project_governance() {
 	fi
 
 	tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/verify-work-governance.XXXXXX")"
+	if [[ -z "${KEEP_ARTIFACTS:-}" ]]; then
+		trap 'rm -rf "$tmp_dir"' EXIT
+	fi
 	rollout_out="$tmp_dir/rollout-check-report.json"
 	docstring_out="$tmp_dir/docstring-ratchet-report.json"
 
@@ -150,6 +153,9 @@ run_workspace_governance() {
 	fi
 
 	tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/verify-work-workspace-governance.XXXXXX")"
+	if [[ -z "${KEEP_ARTIFACTS:-}" ]]; then
+		trap 'rm -rf "$tmp_dir"' EXIT
+	fi
 
 	echo
 	echo "==> governance (workspace)"

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -15,7 +16,7 @@ def _repo_count(payload: Any) -> int:
         repos = payload.get("repos")
         if isinstance(repos, list):
             return len(repos)
-        return 1
+        return 0
     if isinstance(payload, list):
         return len(payload)
     return 0
@@ -49,7 +50,11 @@ def main() -> int:
     if not inventory_path.is_file():
         raise SystemExit(f"inventory file not found: {inventory_path}")
 
-    inventory_payload = json.loads(inventory_path.read_text(encoding="utf-8"))
+    try:
+        inventory_payload = json.loads(inventory_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        raise SystemExit(f"Error: failed to parse JSON from {inventory_path}: {e}")
+
     repos = _repo_count(inventory_payload)
 
     report = {

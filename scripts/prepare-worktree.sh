@@ -11,7 +11,7 @@ Usage: scripts/prepare-worktree.sh [options]
 Prepare a freshly created git worktree for local hooks and pre-push checks.
 
 Options:
-  --force-install   Run npm install even if node_modules already exists
+  --force-install   Run pnpm install even if node_modules already exists
   -h, --help        Show this help text
 USAGE
 }

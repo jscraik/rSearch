@@ -3,6 +3,11 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+
+# shellcheck source=scripts/codex-preflight.sh
+source "$SCRIPT_DIR/codex-preflight.sh"
+preflight_repo
+
 TOOLING_CONTRACT_PATH="${TOOLING_CONTRACT_PATH:-$REPO_ROOT/docs/agents/tooling.contract.json}"
 TOOLING_DOC_PATH="${TOOLING_DOC_PATH:-$REPO_ROOT/docs/agents/tooling.md}"
 
@@ -17,6 +22,9 @@ if [[ ! -f "$TOOLING_CONTRACT_PATH" ]]; then
 fi
 
 mkdir -p "$(dirname -- "$TOOLING_DOC_PATH")"
+
+TEMP_FILE="$(mktemp "${TMPDIR:-/tmp}/tooling-doc.XXXXXX")"
+trap 'rm -f "$TEMP_FILE"' EXIT
 
 {
 	echo "# Tooling Inventory"
@@ -61,6 +69,7 @@ mkdir -p "$(dirname -- "$TOOLING_DOC_PATH")"
 	echo "\`\`\`bash"
 	echo "bash scripts/generate-tooling-doc.sh"
 	echo "\`\`\`"
-} > "$TOOLING_DOC_PATH"
+} > "$TEMP_FILE"
 
+mv "$TEMP_FILE" "$TOOLING_DOC_PATH"
 echo "Generated $TOOLING_DOC_PATH from $TOOLING_CONTRACT_PATH"

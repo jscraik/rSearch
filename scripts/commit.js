@@ -76,7 +76,9 @@ async function createCommit() {
 
     try {
         // Write commit message to a temp file to avoid shell injection via execFileSync
-        const tmpFile = `${process.cwd()}/.git/COMMIT_EDITMSG_TMP`;
+        // Resolve git path using git rev-parse to handle worktrees and non-standard layouts
+        const gitPath = execFileSync('git', ['rev-parse', '--git-path', 'COMMIT_EDITMSG'], { encoding: 'utf8' }).trim();
+        const tmpFile = `${gitPath}_TMP_${Date.now()}`;
         writeFileSync(tmpFile, message, 'utf8');
         try {
             execFileSync('git', ['commit', '-F', tmpFile], { stdio: 'inherit' });

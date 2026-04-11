@@ -73,6 +73,10 @@ function patchInstalledPrekHooks() {
 			`fi\n\n${PREK_HOOK_PATCH}exec "$PREK" hook-impl`,
 		);
 		if (patched === hookContent) {
+			// No change detected but prek invocation present - emit warning with context
+			if (hookContent.includes('exec "$PREK"')) {
+				console.warn(`Warning: prek hook ${hookName} contains prek invocation but patch pattern not matched`);
+			}
 			continue;
 		}
 
@@ -84,6 +88,16 @@ function patchInstalledPrekHooks() {
 }
 
 clearLegacyLocalHooksPath();
+
+// Verify prek binary exists before invoking
+try {
+	execFileSync("which", ["prek"], { stdio: "ignore" });
+} catch {
+	console.error("Error: prek binary not found on PATH");
+	console.error("Fix: install prek via mise or cargo (cargo install prek)");
+	process.exit(1);
+}
+
 run("prek", ["install"]);
 const patchedCount = patchInstalledPrekHooks();
 if (patchedCount > 0) {

@@ -6,13 +6,18 @@ name = "rsearch local environment"
 script = '''
 set -euo pipefail
 
-printf '%s\n' '[codex] setup: /Users/jamiecraik/dev/rsearch'
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+printf '%s\n' "[codex] setup: $REPO_ROOT"
 
+init_env_paths() {
 export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
 
 if command -v mise >/dev/null 2>&1; then
   eval "$(mise activate bash)" >/dev/null 2>&1 || true
 fi
+}
+
+init_env_paths
 
 missing_tools=0
 
@@ -49,11 +54,7 @@ if [ "$missing_tools" -ne 0 ]; then
   exit 1
 fi
 bootstrap_node_tools() {
-export PATH="/opt/homebrew/bin:/usr/local/bin:$HOME/.local/share/mise/shims:$HOME/.local/bin:$PATH"
-
-if command -v mise >/dev/null 2>&1; then
-  eval "$(mise activate bash)" >/dev/null 2>&1 || true
-fi
+init_env_paths
 }
 
 run_node_pm() {

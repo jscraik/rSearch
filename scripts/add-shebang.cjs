@@ -12,9 +12,15 @@ try {
     const bytesRead = fs.readSync(fd, buf, 0, shebang.length, 0);
     const header = buf.toString("utf8", 0, bytesRead);
     if (!header.startsWith(shebang)) {
-      // Read the rest of the file, prepend shebang, write back
-      const rest = fs.readFileSync(target, "utf8");
-      fs.writeFileSync(target, shebang + rest, "utf8");
+      // Read the rest of the file via fd, prepend shebang, write back via fd
+      const stats = fs.fstatSync(fd);
+      const fileContent = Buffer.alloc(stats.size);
+      fs.readSync(fd, fileContent, 0, stats.size, 0);
+      const rest = fileContent.toString("utf8");
+      const newContent = shebang + rest;
+      const newBuffer = Buffer.from(newContent, "utf8");
+      fs.ftruncateSync(fd, 0);
+      fs.writeSync(fd, newBuffer, 0, newBuffer.length, 0);
     }
   } finally {
     fs.closeSync(fd);

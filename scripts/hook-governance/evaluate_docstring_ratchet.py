@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -59,8 +60,17 @@ def main() -> int:
     if not metrics_path.is_file():
         raise SystemExit(f"metrics file not found: {metrics_path}")
 
-    classification_payload = json.loads(classification_path.read_text(encoding="utf-8"))
-    metrics_payload = json.loads(metrics_path.read_text(encoding="utf-8"))
+    try:
+        classification_payload = json.loads(classification_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        print(f"Error: failed to parse JSON from {classification_path}: {e}", file=sys.stderr)
+        return 1
+
+    try:
+        metrics_payload = json.loads(metrics_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        print(f"Error: failed to parse JSON from {metrics_path}: {e}", file=sys.stderr)
+        return 1
 
     report = {
         "schemaVersion": "1.0.0",

@@ -1109,6 +1109,16 @@ const downloadAsTextFormats = async ({
       }
 
       const pdfBuffer = await client.downloadPdfBuffer(entry.id);
+
+      // Validate the buffer looks like a PDF
+      const PDF_MAGIC = 0x25_50_44_46; // "%PDF"
+      const isPdfValid = pdfBuffer.byteLength >= 4 &&
+        new DataView(pdfBuffer.buffer, pdfBuffer.byteOffset, 4).getUint32(0) === PDF_MAGIC;
+
+      if (!isPdfValid) {
+        throw new Error("Invalid PDF: buffer does not contain PDF magic header");
+      }
+
       const text = await extractPdfText(pdfBuffer);
 
       const payload = format === "md"
@@ -1122,12 +1132,7 @@ const downloadAsTextFormats = async ({
         const pdfPath = resolve(outputDir, `${safeId}.pdf`);
         const pdfExists = await fileExists(pdfPath);
         if (!pdfExists || overwrite) {
-          // Validate the buffer looks like a PDF before writing to disk
-          const PDF_MAGIC = 0x25_50_44_46; // "%PDF"
-          const header = new DataView(pdfBuffer.buffer, pdfBuffer.byteOffset, Math.min(4, pdfBuffer.byteLength));
-          if (pdfBuffer.byteLength >= 4 && header.getUint32(0) === PDF_MAGIC) {
-            await writeFile(pdfPath, pdfBuffer);
-          }
+          await writeFile(pdfPath, pdfBuffer);
         }
       }
 
