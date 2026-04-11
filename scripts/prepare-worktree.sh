@@ -41,15 +41,13 @@ if ! git rev-parse --show-toplevel >/dev/null 2>&1; then
 	echo "[prepare-worktree] not inside a git work tree" >&2
 	exit 1
 fi
-git_common_dir="$(git rev-parse --git-common-dir)"
-
 if [[ ! -f package.json ]]; then
 	echo "[prepare-worktree] package.json not found; nothing to bootstrap for this repo shape"
 	exit 0
 fi
 
-if ! command -v npm >/dev/null 2>&1; then
-	echo "[prepare-worktree] npm is required but not on PATH" >&2
+if ! command -v pnpm >/dev/null 2>&1; then
+	echo "[prepare-worktree] pnpm is required but not on PATH" >&2
 	exit 1
 fi
 
@@ -61,22 +59,14 @@ fi
 echo "[prepare-worktree] repo: $REPO_ROOT"
 
 if [[ "$force_install" -eq 1 || ! -d node_modules ]]; then
-	echo "[prepare-worktree] installing dependencies (npm install)"
-	npm install
+	echo "[prepare-worktree] installing dependencies (pnpm install)"
+	pnpm install
 else
 	echo "[prepare-worktree] node_modules already present; skipping install"
 fi
 
 echo "[prepare-worktree] syncing git hooks"
-git config --local core.hooksPath "$git_common_dir/hooks"
 node scripts/setup-git-hooks.js
-if [[ -x "$REPO_ROOT/node_modules/.bin/simple-git-hooks" ]]; then
-	"$REPO_ROOT/node_modules/.bin/simple-git-hooks"
-else
-	echo "[prepare-worktree] simple-git-hooks binary not found under node_modules/.bin" >&2
-	echo "[prepare-worktree] rerun npm install and retry" >&2
-	exit 1
-fi
 
 echo "[prepare-worktree] ready"
 echo "[prepare-worktree] next: bash scripts/verify-work.sh --fast"

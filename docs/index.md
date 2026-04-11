@@ -62,6 +62,9 @@ node dist/cli.js search "cat:cs.AI" --require-license
 ### Understand release versioning
 - See: `docs/release-policy.md`
 
+### Review hook-governance scope defaults
+- See: `docs/hooks-governance/scope-policy.md`
+
 ## Risks and assumptions
 - Assumes filenames and paths stay stable across releases.
 - Index can become stale when new docs are added; update in the same PR.

@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.4.10/schema.json",
 	"vcs": {
 		"enabled": true,
 		"clientKind": "git",
@@ -8,16 +8,21 @@
 	},
 	"files": {
 		"ignoreUnknown": true,
-		"ignore": [
-			"node_modules",
-			"dist",
-			"coverage",
-			"artifacts"
+		"includes": [
+			"**",
+			"!**/node_modules",
+			"!**/dist",
+			"!**/coverage",
+			"!**/artifacts"
 		]
 	},
 	"overrides": [
 		{
-			"include": ["*.config.ts", "vite.config.ts", "vitest.config.ts"],
+			"includes": [
+				"**/*.config.ts",
+				"**/vite.config.ts",
+				"**/vitest.config.ts"
+			],
 			"linter": {
 				"rules": {
 					"style": {
@@ -38,8 +43,8 @@
 			"suspicious": {
 				"noEmptyBlockStatements": "error",
 				"noExplicitAny": "warn",
-				"noConsoleLog": "warn",
-				"noDebugger": "error"
+				"noDebugger": "error",
+				"noConsole": { "level": "warn", "options": { "allow": ["log"] } }
 			},
 			"style": {
 				"noDefaultExport": "error",
@@ -48,7 +53,5 @@
 			}
 		}
 	},
-	"organizeImports": {
-		"enabled": true
-	}
+	"assist": { "actions": { "source": { "organizeImports": "on" } } }
 }

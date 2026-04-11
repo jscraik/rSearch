@@ -1,0 +1,7 @@
+{
+  "public_api": [
+    "src/cli.ts",
+    "src/index.ts"
+  ],
+  "notes": "Baseline project-local public API classification for governance checks."
+}

@@ -1,0 +1,7 @@
+{
+  "docstring_coverage": {
+    "current": 1.0,
+    "target": 1.0
+  },
+  "notes": "Baseline project-local metrics used for explicit-input governance checks."
+}
