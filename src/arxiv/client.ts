@@ -2,7 +2,7 @@ import { buildQuery, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MAX_TOTAL_RESULTS } from 
 import { parseAtom } from "./parser.js";
 import type { ArxivEntry, ArxivSearchOptions, ArxivSearchResult } from "./types.js";
 import { RateLimiter } from "./rateLimiter.js";
-import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve, sep } from "node:path";
 import { createHash, randomUUID } from "node:crypto";
 import { VERSION } from "../version.js";
@@ -350,6 +350,18 @@ export class ArxivClient {
         const pdfUrl = `${this.config.pdfBaseUrl}${safeId}`;
 
         const response = await this.requestBinary(pdfUrl);
+        // Validate the response looks like a PDF before writing to disk
+        const PDF_MAGIC = 0x25_50_44_46; // "%PDF"
+        if (response.byteLength < 4) {
+          results.push({ id: safeId, path: "", status: "failed", error: "Response too small to be a valid PDF" });
+          continue;
+        }
+        const header = new DataView(response.buffer, response.byteOffset, 4);
+        if (header.getUint32(0) !== PDF_MAGIC) {
+          results.push({ id: safeId, path: "", status: "failed", error: "Response is not a valid PDF" });
+          continue;
+        }
+
         await mkdir(dirname(outputPath), { recursive: true });
         await writeFile(outputPath, response);
         results.push({ id: safeId, path: outputPath, status: "downloaded" });
@@ -592,25 +604,38 @@ const readDiskCache = async (
   const filePath = resolve(cacheDir, filename);
 
   try {
-    const content = await readFile(filePath, "utf8");
-    if (typeof ttlMs === "number") {
-      const stats = await stat(filePath);
-      const ageMs = Date.now() - stats.mtimeMs;
-      if (ageMs > ttlMs) {
-        return null;
+    // Use open + fstat to avoid TOCTOU race between stat and read
+    const { open } = await import("node:fs/promises");
+    const handle = await open(filePath, "r");
+    try {
+      if (typeof ttlMs === "number") {
+        const stats = await handle.stat();
+        const ageMs = Date.now() - stats.mtimeMs;
+        if (ageMs > ttlMs) {
+          return null;
+        }
       }
+      return await handle.readFile("utf8");
+    } finally {
+      await handle.close();
     }
-    return content;
   } catch {
     return null;
   }
 };
+
+const MAX_CACHE_ENTRY_BYTES = 10 * 1024 * 1024; // 10 MB
 
 const writeDiskCache = async (
   url: string,
   cacheDir: string,
   payload: string
 ): Promise<void> => {
+  // Bound cache entry size to prevent disk exhaustion from oversized responses
+  const byteLength = Buffer.byteLength(payload, "utf8");
+  if (byteLength > MAX_CACHE_ENTRY_BYTES) {
+    return;
+  }
   const filename = cacheFilenameForUrl(url);
   const filePath = resolve(cacheDir, filename);
   await mkdir(dirname(filePath), { recursive: true });

@@ -1,0 +1,10 @@
+{
+  "repos": [
+    {
+      "name": "rsearch",
+      "root": ".",
+      "profile": "project-local",
+      "status": "active"
+    }
+  ]
+}

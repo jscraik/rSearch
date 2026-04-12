@@ -8,6 +8,7 @@ changed_only=1
 fast_mode=0
 strict_mode=0
 repo_root=""
+governance_mode="project-local"
 
 usage() {
 	cat <<'USAGE'
@@ -18,6 +19,10 @@ Canonical repo-local verification runner.
 Options:
   --all              Run full test coverage in --fast mode
   --changed-only     Prefer changed-file validation in --fast mode (default)
+  --project-governance
+                     Run governance checks in project-local mode (default)
+  --workspace-governance
+                     Run cross-repo governance checks from docs/hooks-governance/repo-scope.manifest.json
   --strict           Fail when fast-mode fallbacks are needed
   --fast             Run preflight + lint + typecheck + tests instead of the full check bundle
   --repo-root PATH   Run checks in a specific repository root
@@ -67,6 +72,140 @@ has_package_script() {
 	jq -e --arg script_name "$script_name" '(.scripts // {}) | has($script_name)' "$repo_root/package.json" >/dev/null 2>&1
 }
 
+resolve_path() {
+	local base_dir="$1"
+	local value="$2"
+	if [[ "$value" = /* ]]; then
+		printf '%s\n' "$value"
+	else
+		printf '%s/%s\n' "$base_dir" "$value"
+	fi
+}
+
+run_project_governance() {
+	local governance_dir="$repo_root/docs/hooks-governance"
+	local rollout_script="$repo_root/scripts/hook-governance/rollout_check.py"
+	local docstring_script="$repo_root/scripts/hook-governance/evaluate_docstring_ratchet.py"
+	local inventory="$governance_dir/repo-profile-matrix.json"
+	local classification="$governance_dir/public-api-classification.json"
+	local metrics="$governance_dir/docstring-ratchet-metrics.json"
+	local tmp_dir=""
+	local rollout_out=""
+	local docstring_out=""
+
+	if [[ ! -f "$rollout_script" || ! -f "$docstring_script" ]]; then
+		echo "[verify-work] missing hook-governance scripts under scripts/hook-governance/" >&2
+		exit 1
+	fi
+
+	if [[ ! -f "$inventory" || ! -f "$classification" || ! -f "$metrics" ]]; then
+		echo "[verify-work] missing required project-local governance inputs in docs/hooks-governance/" >&2
+		exit 1
+	fi
+
+	tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/verify-work-governance.XXXXXX")"
+	if [[ -z "${KEEP_ARTIFACTS:-}" ]]; then
+		trap 'rm -rf "$tmp_dir"' EXIT
+	fi
+	rollout_out="$tmp_dir/rollout-check-report.json"
+	docstring_out="$tmp_dir/docstring-ratchet-report.json"
+
+	echo
+	echo "==> governance (project-local)"
+	python3 "$rollout_script" \
+		--inventory "$inventory" \
+		--recovery-slo-hours 24 \
+		--out "$rollout_out"
+	python3 "$docstring_script" \
+		--classification "$classification" \
+		--metrics "$metrics" \
+		--window-days 14 \
+		--out "$docstring_out"
+
+	echo "[verify-work] project-local governance artifacts:"
+	echo "  - $rollout_out"
+	echo "  - $docstring_out"
+}
+
+run_workspace_governance() {
+	local governance_dir="$repo_root/docs/hooks-governance"
+	local rollout_script="$repo_root/scripts/hook-governance/rollout_check.py"
+	local docstring_script="$repo_root/scripts/hook-governance/evaluate_docstring_ratchet.py"
+	local manifest="$governance_dir/repo-scope.manifest.json"
+	local tmp_dir=""
+	local repo_count=""
+	local idx=""
+
+	if [[ ! -f "$rollout_script" || ! -f "$docstring_script" ]]; then
+		echo "[verify-work] missing hook-governance scripts under scripts/hook-governance/" >&2
+		exit 1
+	fi
+
+	if [[ ! -f "$manifest" ]]; then
+		echo "[verify-work] missing workspace governance manifest: $manifest" >&2
+		exit 1
+	fi
+
+	repo_count="$(jq -r '.repos | length' "$manifest")"
+	if [[ "$repo_count" -eq 0 ]]; then
+		echo "[verify-work] workspace governance manifest has no repos: $manifest" >&2
+		exit 1
+	fi
+
+	tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/verify-work-workspace-governance.XXXXXX")"
+	if [[ -z "${KEEP_ARTIFACTS:-}" ]]; then
+		trap 'rm -rf "$tmp_dir"' EXIT
+	fi
+
+	echo
+	echo "==> governance (workspace)"
+	for ((idx = 0; idx < repo_count; idx++)); do
+		local name root inventory classification metrics repo_root_abs
+		local inventory_abs classification_abs metrics_abs
+		local safe_name rollout_out docstring_out
+
+		name="$(jq -r ".repos[$idx].name // \"repo-$idx\"" "$manifest")"
+		root="$(jq -r ".repos[$idx].root // \".\"" "$manifest")"
+		inventory="$(jq -r ".repos[$idx].inventory // empty" "$manifest")"
+		classification="$(jq -r ".repos[$idx].classification // empty" "$manifest")"
+		metrics="$(jq -r ".repos[$idx].metrics // empty" "$manifest")"
+
+		if [[ -z "$inventory" || -z "$classification" || -z "$metrics" ]]; then
+			echo "[verify-work] repo entry '$name' is missing inventory/classification/metrics in $manifest" >&2
+			exit 1
+		fi
+
+		repo_root_abs="$(resolve_path "$repo_root" "$root")"
+		inventory_abs="$(resolve_path "$repo_root_abs" "$inventory")"
+		classification_abs="$(resolve_path "$repo_root_abs" "$classification")"
+		metrics_abs="$(resolve_path "$repo_root_abs" "$metrics")"
+
+		if [[ ! -f "$inventory_abs" || ! -f "$classification_abs" || ! -f "$metrics_abs" ]]; then
+			echo "[verify-work] repo entry '$name' has missing files:" >&2
+			echo "  inventory: $inventory_abs" >&2
+			echo "  classification: $classification_abs" >&2
+			echo "  metrics: $metrics_abs" >&2
+			exit 1
+		fi
+
+		safe_name="$(printf '%s' "$name" | tr -cs 'A-Za-z0-9._-' '_')"
+		rollout_out="$tmp_dir/${safe_name}-rollout-check-report.json"
+		docstring_out="$tmp_dir/${safe_name}-docstring-ratchet-report.json"
+
+		python3 "$rollout_script" \
+			--inventory "$inventory_abs" \
+			--recovery-slo-hours 24 \
+			--out "$rollout_out"
+		python3 "$docstring_script" \
+			--classification "$classification_abs" \
+			--metrics "$metrics_abs" \
+			--window-days 14 \
+			--out "$docstring_out"
+	done
+
+	echo "[verify-work] workspace governance artifacts directory: $tmp_dir"
+}
+
 while (( $# > 0 )); do
 	case "$1" in
 		--all|--all-skills)
@@ -75,6 +214,14 @@ while (( $# > 0 )); do
 			;;
 		--changed-only)
 			changed_only=1
+			shift
+			;;
+		--project-governance)
+			governance_mode="project-local"
+			shift
+			;;
+		--workspace-governance)
+			governance_mode="workspace"
 			shift
 			;;
 		--strict)
@@ -119,6 +266,19 @@ bash "$repo_root/scripts/codex-preflight.sh" \
 	--mode required \
 	--bins "$bins_csv" \
 	--paths "$paths_csv"
+
+case "$governance_mode" in
+	project-local)
+		run_project_governance
+		;;
+	workspace)
+		run_workspace_governance
+		;;
+	*)
+		echo "[verify-work] unsupported governance mode: $governance_mode" >&2
+		exit 2
+		;;
+esac
 
 if [[ "$fast_mode" -eq 0 ]]; then
 	echo

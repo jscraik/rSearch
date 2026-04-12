@@ -1,0 +1,11 @@
+{
+  "repos": [
+    {
+      "name": "rsearch",
+      "root": ".",
+      "inventory": "docs/hooks-governance/repo-profile-matrix.json",
+      "classification": "docs/hooks-governance/public-api-classification.json",
+      "metrics": "docs/hooks-governance/docstring-ratchet-metrics.json"
+    }
+  ]
+}

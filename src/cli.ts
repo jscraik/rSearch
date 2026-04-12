@@ -20,7 +20,7 @@ import { VERSION } from "./version.js";
 import { fetchTaxonomy } from "./arxiv/taxonomy.js";
 import { extractPdfText } from "./utils/pdf.js";
 import { filterByLicense, hasLicenseMetadata } from "./arxiv/license.js";
-import { access, mkdir, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 
 // Type definitions for CLI arguments
@@ -1109,6 +1109,16 @@ const downloadAsTextFormats = async ({
       }
 
       const pdfBuffer = await client.downloadPdfBuffer(entry.id);
+
+      // Validate the buffer looks like a PDF
+      const PDF_MAGIC = 0x25_50_44_46; // "%PDF"
+      const isPdfValid = pdfBuffer.byteLength >= 4 &&
+        new DataView(pdfBuffer.buffer, pdfBuffer.byteOffset, 4).getUint32(0) === PDF_MAGIC;
+
+      if (!isPdfValid) {
+        throw new Error("Invalid PDF: buffer does not contain PDF magic header");
+      }
+
       const text = await extractPdfText(pdfBuffer);
 
       const payload = format === "md"

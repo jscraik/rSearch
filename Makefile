@@ -1,7 +1,7 @@
 # Harness Development Makefile
 # Run `make help` to see available commands
 
-.PHONY: help install setup preflight worktree-ready verify-work hooks hooks-pre-commit hooks-pre-push secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check
+.PHONY: help install setup preflight worktree-ready verify-work hooks hooks-pre-commit hooks-pre-push hooks-commit-msg secrets-staged docs-style-changed related-tests semgrep-changed diagrams-check dev build lint docs-lint fmt typecheck test check audit secrets security clean reset ci diagrams env-check tooling-doc
 
 # Default target
 help: ## Show this help message
@@ -46,6 +46,16 @@ hooks-pre-push: ## Run local pre-push governance gates before pushing
 	pnpm test
 	pnpm build
 	pnpm audit
+
+hooks-commit-msg: ## Validate a normalized commit message via HOOK_COMMIT_MSG
+	@if [ -z "$$HOOK_COMMIT_MSG" ]; then \
+		echo "HOOK_COMMIT_MSG is required"; \
+		exit 1; \
+	fi
+	@tmp_file="$$(mktemp)"; \
+	trap 'rm -f "$$tmp_file"' EXIT; \
+	printf "%s\n" "$$HOOK_COMMIT_MSG" > "$$tmp_file"; \
+	node scripts/validate-commit-msg.js "$$tmp_file"
 
 secrets-staged: ## Scan staged content for secrets before committing
 	pnpm run secrets:staged
@@ -123,3 +133,6 @@ diagrams: ## Generate architecture diagrams
 
 env-check: ## Check environment policy envelope
 	@bash ./scripts/check-environment.sh
+
+tooling-doc: ## Regenerate docs/agents/tooling.md from tooling.contract.json
+	@bash ./scripts/generate-tooling-doc.sh

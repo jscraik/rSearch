@@ -105,17 +105,109 @@ preflight_repo() {
 }
 
 preflight_js() {
-  preflight_repo "${1:-}" "git,bash,sed,rg,node,npm" "${2:-AGENTS.md,package.json,docs,docs/plans}"
+  local expected_repo="${1:-}"
+  local paths_csv="${2:-AGENTS.md,package.json,docs,docs/plans}"
+  local bins_csv="${3:-git,bash,sed,rg,node,npm,pnpm}"
+  preflight_repo "$expected_repo" "$bins_csv" "$paths_csv"
 }
 
 preflight_rust() {
-  preflight_repo "${1:-}" "git,bash,sed,rg,python3,cargo" "${2:-AGENTS.md,Cargo.toml,docs,docs/plans}"
+  local expected_repo="${1:-}"
+  local paths_csv="${2:-AGENTS.md,Cargo.toml,docs,docs/plans}"
+  local bins_csv="${3:-git,bash,sed,rg,python3,cargo}"
+  preflight_repo "$expected_repo" "$bins_csv" "$paths_csv"
 }
 
 preflight_py() {
-  preflight_repo "${1:-}" "git,bash,sed,rg,python3" "${2:-AGENTS.md,pyproject.toml,docs,docs/plans}"
+  local expected_repo="${1:-}"
+  local paths_csv="${2:-AGENTS.md,pyproject.toml,docs,docs/plans}"
+  local bins_csv="${3:-git,bash,sed,rg,python3}"
+  preflight_repo "$expected_repo" "$bins_csv" "$paths_csv"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
-  preflight_repo "$@"
+  stack="repo"
+  expected_repo=""
+  bins_csv=""
+  paths_csv=""
+
+  while (($# > 0)); do
+    case "$1" in
+      --stack)
+        if [[ -z "${2:-}" ]]; then
+          echo "❌ --stack requires a value" >&2
+          exit 2
+        fi
+        stack="$2"
+        shift 2
+        ;;
+      --mode)
+        # Supported for CLI compatibility; current preflight behavior does not
+        # vary by mode.
+        if [[ -z "${2:-}" ]]; then
+          echo "❌ --mode requires a value" >&2
+          exit 2
+        fi
+        shift 2
+        ;;
+      --expected-repo)
+        if [[ -z "${2:-}" ]]; then
+          echo "❌ --expected-repo requires a value" >&2
+          exit 2
+        fi
+        expected_repo="$2"
+        shift 2
+        ;;
+      --bins)
+        if [[ -z "${2:-}" ]]; then
+          echo "❌ --bins requires a value" >&2
+          exit 2
+        fi
+        bins_csv="$2"
+        shift 2
+        ;;
+      --paths)
+        if [[ -z "${2:-}" ]]; then
+          echo "❌ --paths requires a value" >&2
+          exit 2
+        fi
+        paths_csv="$2"
+        shift 2
+        ;;
+      -h|--help)
+        cat <<'USAGE'
+Usage: scripts/codex-preflight.sh [--stack repo|auto|js|py|rust] [--mode optional|required] [--expected-repo FRAGMENT] [--bins csv] [--paths csv]
+USAGE
+        exit 0
+        ;;
+      *)
+        if [[ -z "${expected_repo}" ]]; then
+          expected_repo="$1"
+          shift
+        else
+          echo "❌ unknown argument: $1" >&2
+          exit 2
+        fi
+        ;;
+    esac
+  done
+
+  case "${stack}" in
+    auto|js)
+      preflight_js "${expected_repo}" "${paths_csv:-}" "${bins_csv:-}"
+      ;;
+    py)
+      preflight_py "${expected_repo}" "${paths_csv:-}" "${bins_csv:-}"
+      ;;
+    rust)
+      preflight_rust "${expected_repo}" "${paths_csv:-}" "${bins_csv:-}"
+      ;;
+    repo|"")
+      preflight_repo "${expected_repo}" "${bins_csv:-}" "${paths_csv:-}"
+      ;;
+    *)
+      echo "❌ unsupported stack: ${stack}" >&2
+      exit 2
+      ;;
+  esac
 fi

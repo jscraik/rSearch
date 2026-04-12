@@ -99,7 +99,7 @@ export const buildQuery = (
   return { url, query: params.toString(), params };
 };
 
-const COMMA_SEPARATOR = /,\s*/;
+const COMMA_SEPARATOR = /,/;
 const normalizeList = (value: string[] | undefined): string[] | undefined => {
   if (!value) return undefined;
   return value

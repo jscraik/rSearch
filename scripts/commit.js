@@ -2,6 +2,7 @@
 
 import { execFileSync } from 'child_process';
 import { createInterface } from 'readline';
+import { writeFileSync, unlinkSync } from 'node:fs';
 
 const rl = createInterface({
     input: process.stdin,
@@ -74,7 +75,16 @@ async function createCommit() {
     }
 
     try {
-        execFileSync('git', ['commit', '-m', message], { stdio: 'inherit' });
+        // Write commit message to a temp file to avoid shell injection via execFileSync
+        // Resolve git path using git rev-parse to handle worktrees and non-standard layouts
+        const gitPath = execFileSync('git', ['rev-parse', '--git-path', 'COMMIT_EDITMSG'], { encoding: 'utf8' }).trim();
+        const tmpFile = `${gitPath}_TMP_${Date.now()}`;
+        writeFileSync(tmpFile, message, 'utf8');
+        try {
+            execFileSync('git', ['commit', '-F', tmpFile], { stdio: 'inherit' });
+        } finally {
+            try { unlinkSync(tmpFile); } catch { /* ignore */ }
+        }
         console.log('✅ Commit created successfully!');
     } catch (error) {
         console.log('❌ Commit failed:', error.message);
