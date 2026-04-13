@@ -10,7 +10,7 @@
     "Fixed TOCTOU races in add-shebang.cjs, setup-git-hooks.js, client.ts",
     "Added path traversal validation for arXiv ID downloads",
     "Extracted regex to constant in query.ts (polynomial-redos)",
-    "Closed Dependabot PRs #39-42 as superseded"
+    "Closed Dependabot PRs #39-42 as superseded",
     "Created PR #43 with all fixes"
   ],
   "artifacts": {
