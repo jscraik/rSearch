@@ -407,7 +407,7 @@ jobs:
       - name: Install dependencies
         run: npm install
       - name: Install biome CLI
-        run: npm install -g @biomejs/biome
+        run: npm install -g @biomejs/biome@2.4.10
       - name: Run lint
         run: npm run lint
 
@@ -473,7 +473,7 @@ jobs:
       - name: Install dependencies
         run: npm install
       - name: Install biome CLI
-        run: npm install -g @biomejs/biome
+        run: npm install -g @biomejs/biome@2.4.10
       - name: Run full check
         run: npm run check
 
