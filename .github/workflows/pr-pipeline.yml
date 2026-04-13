@@ -474,6 +474,15 @@ jobs:
         run: npm install
       - name: Install biome CLI
         run: npm install -g @biomejs/biome@2.4.10
+      - name: Capture docs lint diff range
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "CI_BASE_SHA=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_ENV"
+            echo "CI_HEAD_SHA=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_ENV"
+          else
+            echo "CI_BASE_SHA=${{ github.event.merge_group.base_sha }}" >> "$GITHUB_ENV"
+            echo "CI_HEAD_SHA=${{ github.event.merge_group.head_sha }}" >> "$GITHUB_ENV"
+          fi
       - name: Run full check
         run: npm run check
 
