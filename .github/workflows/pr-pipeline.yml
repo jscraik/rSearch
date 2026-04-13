@@ -229,14 +229,17 @@ jobs:
           fi
       - name: Run advisory drift gate
         run: |
-          if pnpm exec tsx src/cli.ts help 2>/dev/null | grep -q "drift-gate"; then
-            pnpm exec tsx src/cli.ts drift-gate \
-              --mode advisory \
-              --json \
-              --out artifacts/consistency-gate/consistency-drift-advisory-latest.json
-          else
-            echo "::warning::drift-gate command unavailable in this repository CLI; writing advisory fallback stub."
-            cat > artifacts/consistency-gate/consistency-drift-advisory-latest.json <<'JSON'
+          help_output="$(mktemp)"
+          trap 'rm -f "$help_output"' EXIT
+          if pnpm exec tsx src/cli.ts help >"$help_output" 2>&1; then
+            if grep -q "drift-gate" "$help_output"; then
+              pnpm exec tsx src/cli.ts drift-gate \
+                --mode advisory \
+                --json \
+                --out artifacts/consistency-gate/consistency-drift-advisory-latest.json
+            else
+              echo "::warning::drift-gate command unavailable in this repository CLI; advisory gate skipped."
+              cat > artifacts/consistency-gate/consistency-drift-advisory-latest.json <<'JSON'
           {
             "schemaVersion": "1.0.0",
             "command": "drift-gate",
@@ -256,6 +259,33 @@ jobs:
                 "severity": "info",
                 "baseline_state": "new",
                 "message": "drift-gate command unavailable in repository CLI; advisory gate skipped."
+              }
+            ]
+          }
+          JSON
+            fi
+          else
+            echo "::warning::Unable to probe CLI help for drift-gate; advisory gate skipped."
+            cat > artifacts/consistency-gate/consistency-drift-advisory-latest.json <<'JSON'
+          {
+            "schemaVersion": "1.0.0",
+            "command": "drift-gate",
+            "mode": "advisory",
+            "status": "partial",
+            "outcome": "ok",
+            "error_class": "none",
+            "generated_at": "1970-01-01T00:00:00.000Z",
+            "repo_root": ".",
+            "baseline": { "path": "artifacts/consistency-gate/consistency-baseline-latest.json", "loaded": false, "reason": "probe_failed" },
+            "summary": { "finding_count": 1, "new_count": 1, "preexisting_count": 0, "error_count": 0 },
+            "findings": [
+              {
+                "rule_id": "drift.gate.probe.failed",
+                "surface": "status",
+                "rule_result": "not_applicable",
+                "severity": "info",
+                "baseline_state": "new",
+                "message": "Unable to probe CLI help for drift-gate; advisory gate skipped."
               }
             ]
           }
