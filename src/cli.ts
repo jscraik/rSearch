@@ -712,7 +712,9 @@ const cli = yargs(argvForYargs)
   .command(
     "config",
     "Show effective configuration",
-    () => {},
+    () => {
+      // No command-specific builder is required for this command.
+    },
     async (args) => {
       const { config, configPaths } = await loadConfig(process.cwd(), args.config);
       const env = envConfig();
