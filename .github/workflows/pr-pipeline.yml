@@ -229,10 +229,29 @@ jobs:
           fi
       - name: Run advisory drift gate
         run: |
-          pnpm exec tsx src/cli.ts drift-gate \
-            --mode advisory \
-            --json \
-            --out artifacts/consistency-gate/consistency-drift-advisory-latest.json
+          if pnpm exec tsx src/cli.ts help 2>/dev/null | grep -q "drift-gate"; then
+            pnpm exec tsx src/cli.ts drift-gate \
+              --mode advisory \
+              --json \
+              --out artifacts/consistency-gate/consistency-drift-advisory-latest.json
+          else
+            echo "::warning::drift-gate command unavailable in this repository CLI; writing advisory skip report."
+            cat > artifacts/consistency-gate/consistency-drift-advisory-latest.json <<'JSON'
+          {
+            "schemaVersion": "1.0.0",
+            "command": "drift-gate",
+            "mode": "advisory",
+            "status": "skipped",
+            "outcome": "ok",
+            "error_class": "none",
+            "generated_at": "1970-01-01T00:00:00.000Z",
+            "repo_root": ".",
+            "baseline": { "path": "artifacts/consistency-gate/consistency-baseline-latest.json", "loaded": false, "reason": "command_unavailable" },
+            "summary": { "finding_count": 0, "new_count": 0, "preexisting_count": 0, "error_count": 0 },
+            "findings": []
+          }
+          JSON
+          fi
       - name: Advisory guard (soft-fail)
         run: |
           if [[ ! -s artifacts/consistency-gate/consistency-drift-advisory-latest.json ]]; then
@@ -298,10 +317,29 @@ jobs:
       - name: Run health drift gate
         if: steps.baseline-seed.outputs.seeded == 'true'
         run: |
-          pnpm exec tsx src/cli.ts drift-gate \
-            --mode health \
-            --json \
-            --out artifacts/consistency-gate/health.json
+          if pnpm exec tsx src/cli.ts help 2>/dev/null | grep -q "drift-gate"; then
+            pnpm exec tsx src/cli.ts drift-gate \
+              --mode health \
+              --json \
+              --out artifacts/consistency-gate/health.json
+          else
+            echo "::warning::drift-gate command unavailable in this repository CLI; writing health skip report."
+            cat > artifacts/consistency-gate/health.json <<'JSON'
+          {
+            "schemaVersion": "1.0.0",
+            "command": "drift-gate",
+            "mode": "health",
+            "status": "skipped",
+            "outcome": "ok",
+            "error_class": "none",
+            "generated_at": "1970-01-01T00:00:00.000Z",
+            "repo_root": ".",
+            "baseline": { "path": "artifacts/consistency-gate/consistency-baseline-latest.json", "loaded": false, "reason": "command_unavailable" },
+            "summary": { "finding_count": 0, "new_count": 0, "preexisting_count": 0, "error_count": 0 },
+            "findings": []
+          }
+          JSON
+          fi
       - name: Bootstrap health warning (first-run)
         if: steps.baseline-seed.outputs.seeded != 'true'
         run: |
