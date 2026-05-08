@@ -31,7 +31,7 @@ hooks: ## Setup git hooks
 
 hooks-pre-commit: ## Run local pre-commit gates before creating a commit
 	pnpm lint
-	pnpm docs:lint
+	DOCS_LINT_SCOPE=staged pnpm docs:lint
 	pnpm typecheck
 	$(MAKE) secrets-staged
 	$(MAKE) docs-style-changed
@@ -45,7 +45,7 @@ hooks-pre-push: ## Run local pre-push governance gates before pushing
 	$(MAKE) semgrep-changed
 	pnpm test
 	pnpm build
-	pnpm audit
+	pnpm run audit
 
 hooks-commit-msg: ## Validate a normalized commit message via HOOK_COMMIT_MSG
 	@if [ -z "$$HOOK_COMMIT_MSG" ]; then \
@@ -103,7 +103,7 @@ check: ## Run all required quality gates
 # === Security ===
 
 audit: ## Run security audit
-	pnpm audit
+	pnpm run audit
 
 secrets: ## Scan for secrets with gitleaks
 	@gitleaks detect --source . --verbose || (echo "Install gitleaks: brew install gitleaks" && exit 1)
