@@ -25,7 +25,7 @@ rules:
     severity: ERROR
     languages: [javascript, typescript]
     pattern-either:
-      - pattern: spawn(..., { ..., shell: true, ... })
-      - pattern: spawnSync(..., { ..., shell: true, ... })
-      - pattern: execFile(..., { ..., shell: true, ... })
-      - pattern: execFileSync(..., { ..., shell: true, ... })
+      - pattern: "spawn(..., { ..., shell: true, ... })"
+      - pattern: "spawnSync(..., { ..., shell: true, ... })"
+      - pattern: "execFile(..., { ..., shell: true, ... })"
+      - pattern: "execFileSync(..., { ..., shell: true, ... })"

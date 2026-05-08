@@ -51,6 +51,14 @@ if [[ ${#changed_sources[@]} -eq 0 ]]; then
 	exit 0
 fi
 
+semgrep_state_dir="$REPO_ROOT/.cache/semgrep"
+mkdir -p "$semgrep_state_dir"
+export SEMGREP_LOG_FILE="$semgrep_state_dir/semgrep.log"
+export SEMGREP_SETTINGS_FILE="$semgrep_state_dir/settings.yaml"
+export XDG_CONFIG_HOME="$semgrep_state_dir/config"
+export XDG_CACHE_HOME="$semgrep_state_dir/cache"
+mkdir -p "$XDG_CONFIG_HOME" "$XDG_CACHE_HOME"
+
 semgrep scan \
 	--config "$RULESET_PATH" \
 	--disable-version-check \
