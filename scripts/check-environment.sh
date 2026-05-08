@@ -421,6 +421,18 @@ if command -v npm >/dev/null 2>&1 && ! npm ls -g --depth=0 @brainwav/coding-harn
 	echo "Warning: @brainwav/coding-harness is not visible to npm ls -g; using harness from PATH: $(command -v harness)"
 fi
 
+attestation_rel_path="${ATTESTATION_PATH#$REPO_ROOT/}"
+attestation_tracked=false
+if git -C "$REPO_ROOT" ls-files --error-unmatch "$attestation_rel_path" >/dev/null 2>&1; then
+	attestation_tracked=true
+	if ! git -C "$REPO_ROOT" diff --quiet -- "$attestation_rel_path" ||
+		! git -C "$REPO_ROOT" diff --cached --quiet -- "$attestation_rel_path"; then
+		echo "Error: tracked attestation has local edits: $attestation_rel_path"
+		echo "Commit, stash, or restore that file before running the environment check."
+		exit 1
+	fi
+fi
+
 if ! run_check_environment_with_runner "global npm harness ($(command -v harness))" harness; then
 	echo "Error: global npm harness failed to run check-environment successfully."
 	echo "Reinstall and retry:"
@@ -432,6 +444,6 @@ fi
 jq -e '.passed == true' "$ATTESTATION_PATH" >/dev/null
 echo "Environment check passed (attestation: $ATTESTATION_PATH)"
 
-if git -C "$REPO_ROOT" ls-files --error-unmatch "${ATTESTATION_PATH#$REPO_ROOT/}" >/dev/null 2>&1; then
-	git -C "$REPO_ROOT" restore --worktree -- "${ATTESTATION_PATH#$REPO_ROOT/}"
+if [[ "$attestation_tracked" == true ]]; then
+	git -C "$REPO_ROOT" restore --worktree -- "$attestation_rel_path"
 fi
