@@ -7,7 +7,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 CONTRACT_PATH="$REPO_ROOT/harness.contract.json"
-ATTESTATION_PATH="$REPO_ROOT/artifacts/policy/environment-attestation.json"
+ATTESTATION_PATH="${ATTESTATION_PATH:-$REPO_ROOT/artifacts/policy/environment-attestation.json}"
 MISE_PATH="$REPO_ROOT/.mise.toml"
 CODEX_ENVIRONMENT_PATH="$REPO_ROOT/.codex/environments/environment.toml"
 MAKEFILE_PATH="$REPO_ROOT/Makefile"
@@ -297,7 +297,7 @@ if [[ -f "$PACKAGE_JSON_PATH" ]]; then
 		[[ -n "$capability" ]] || continue
 		repo_capabilities+=("$capability")
 	done
-	ui_markers=("react" "react-dom" "next" "vite" "tailwindcss" "@storybook/react" "@storybook/react-vite" "@radix-ui/react-slot")
+	ui_markers=("react" "react-dom" "next" "tailwindcss" "@storybook/react" "@storybook/react-vite" "@radix-ui/react-slot")
 	for marker in "${ui_markers[@]}"; do
 		if has_package_marker "$marker"; then
 			repo_capabilities+=("ui")
@@ -364,7 +364,7 @@ if [[ -f "$PACKAGE_JSON_PATH" ]]; then
 	done
 fi
 
-mkdir -p "$REPO_ROOT/artifacts/policy"
+mkdir -p "$(dirname "$ATTESTATION_PATH")"
 
 echo "Running harness environment preflight..."
 
@@ -411,25 +411,14 @@ run_check_environment_with_runner() {
 	return 0
 }
 
-if ! command -v npm >/dev/null 2>&1; then
-	echo "Error: npm is required to validate global harness installation."
-	exit 1
-fi
-
-if ! npm ls -g --depth=0 @brainwav/coding-harness >/dev/null 2>&1; then
-	echo "Error: @brainwav/coding-harness is not installed globally via npm."
-	echo "Install globally and retry:"
-	echo "  npm i -g @brainwav/coding-harness"
-	echo "Private registry auth is required:"
-	echo "  - Local shell: export NPM_TOKEN=<token>"
-	echo "  - CI (CircleCI): set NPM_TOKEN as a project environment variable in CircleCI project settings"
-	exit 1
-fi
-
 if ! command -v harness >/dev/null 2>&1; then
-	echo "Error: global harness binary is not on PATH after npm installation."
-	echo "Fix: ensure npm global bin directory is on PATH, then retry."
+	echo "Error: harness binary is not on PATH."
+	echo "Install @brainwav/coding-harness globally or expose the repo-managed harness shim, then retry."
 	exit 1
+fi
+
+if command -v npm >/dev/null 2>&1 && ! npm ls -g --depth=0 @brainwav/coding-harness >/dev/null 2>&1; then
+	echo "Warning: @brainwav/coding-harness is not visible to npm ls -g; using harness from PATH: $(command -v harness)"
 fi
 
 if ! run_check_environment_with_runner "global npm harness ($(command -v harness))" harness; then
@@ -442,3 +431,7 @@ fi
 
 jq -e '.passed == true' "$ATTESTATION_PATH" >/dev/null
 echo "Environment check passed (attestation: $ATTESTATION_PATH)"
+
+if git -C "$REPO_ROOT" ls-files --error-unmatch "${ATTESTATION_PATH#$REPO_ROOT/}" >/dev/null 2>&1; then
+	git -C "$REPO_ROOT" restore --worktree -- "${ATTESTATION_PATH#$REPO_ROOT/}"
+fi
