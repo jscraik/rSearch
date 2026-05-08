@@ -231,63 +231,27 @@ jobs:
         run: |
           help_output="$(mktemp)"
           trap 'rm -f "$help_output"' EXIT
-          if pnpm exec tsx src/cli.ts help >"$help_output" 2>&1; then
-            if grep -q "drift-gate" "$help_output"; then
-              pnpm exec tsx src/cli.ts drift-gate \
-                --mode advisory \
-                --json \
-                --out artifacts/consistency-gate/consistency-drift-advisory-latest.json
-            else
-              echo "::warning::drift-gate command unavailable in this repository CLI; advisory gate skipped."
-              cat > artifacts/consistency-gate/consistency-drift-advisory-latest.json <<'JSON'
-          {
-            "schemaVersion": "1.0.0",
-            "command": "drift-gate",
-            "mode": "advisory",
-            "status": "partial",
-            "outcome": "ok",
-            "error_class": "none",
-            "generated_at": "1970-01-01T00:00:00.000Z",
-            "repo_root": ".",
-            "baseline": { "path": "artifacts/consistency-gate/consistency-baseline-latest.json", "loaded": false, "reason": "command_unavailable" },
-            "summary": { "finding_count": 1, "new_count": 1, "preexisting_count": 0, "error_count": 0 },
-            "findings": [
-              {
-                "rule_id": "drift.gate.command.unavailable",
-                "surface": "status",
-                "rule_result": "not_applicable",
-                "severity": "info",
-                "baseline_state": "new",
-                "message": "drift-gate command unavailable in repository CLI; advisory gate skipped."
-              }
-            ]
-          }
-          JSON
-            fi
+          pnpm exec tsx src/cli.ts help >"$help_output"
+          if grep -q "drift-gate" "$help_output"; then
+            pnpm exec tsx src/cli.ts drift-gate \
+              --mode advisory \
+              --json \
+              --out artifacts/consistency-gate/consistency-drift-advisory-latest.json
           else
-            echo "::warning::Unable to probe CLI help for drift-gate; advisory gate skipped."
+            echo "::warning::drift-gate command unavailable in this repository CLI; writing advisory skip report."
             cat > artifacts/consistency-gate/consistency-drift-advisory-latest.json <<'JSON'
           {
             "schemaVersion": "1.0.0",
             "command": "drift-gate",
             "mode": "advisory",
-            "status": "partial",
+            "status": "skipped",
             "outcome": "ok",
             "error_class": "none",
             "generated_at": "1970-01-01T00:00:00.000Z",
             "repo_root": ".",
-            "baseline": { "path": "artifacts/consistency-gate/consistency-baseline-latest.json", "loaded": false, "reason": "probe_failed" },
-            "summary": { "finding_count": 1, "new_count": 1, "preexisting_count": 0, "error_count": 0 },
-            "findings": [
-              {
-                "rule_id": "drift.gate.probe.failed",
-                "surface": "status",
-                "rule_result": "not_applicable",
-                "severity": "info",
-                "baseline_state": "new",
-                "message": "Unable to probe CLI help for drift-gate; advisory gate skipped."
-              }
-            ]
+            "baseline": { "path": "artifacts/consistency-gate/consistency-baseline-latest.json", "loaded": false, "reason": "command_unavailable" },
+            "summary": { "finding_count": 0, "new_count": 0, "preexisting_count": 0, "error_count": 0 },
+            "findings": []
           }
           JSON
           fi
@@ -356,37 +320,31 @@ jobs:
       - name: Run health drift gate
         if: steps.baseline-seed.outputs.seeded == 'true'
         run: |
-          if pnpm exec tsx src/cli.ts help 2>/dev/null | grep -q "drift-gate"; then
+          help_output="$(mktemp)"
+          trap 'rm -f "$help_output"' EXIT
+          pnpm exec tsx src/cli.ts help >"$help_output"
+          if grep -q "drift-gate" "$help_output"; then
             pnpm exec tsx src/cli.ts drift-gate \
               --mode health \
               --json \
               --out artifacts/consistency-gate/health.json
           else
+            echo "::warning::drift-gate command unavailable in this repository CLI; writing health skip report."
             cat > artifacts/consistency-gate/health.json <<'JSON'
           {
             "schemaVersion": "1.0.0",
             "command": "drift-gate",
             "mode": "health",
-            "status": "partial",
+            "status": "skipped",
             "outcome": "ok",
             "error_class": "none",
             "generated_at": "1970-01-01T00:00:00.000Z",
             "repo_root": ".",
             "baseline": { "path": "artifacts/consistency-gate/consistency-baseline-latest.json", "loaded": false, "reason": "command_unavailable" },
-            "summary": { "finding_count": 1, "new_count": 1, "preexisting_count": 0, "error_count": 0 },
-            "findings": [
-              {
-                "rule_id": "drift.gate.command.unavailable",
-                "surface": "status",
-                "rule_result": "not_applicable",
-                "severity": "info",
-                "baseline_state": "new",
-                "message": "drift-gate command unavailable in repository CLI; health gate skipped."
-              }
-            ]
+            "summary": { "finding_count": 0, "new_count": 0, "preexisting_count": 0, "error_count": 0 },
+            "findings": []
           }
           JSON
-            echo "::warning::drift-gate command unavailable in this repository CLI; health gate skipped."
           fi
       - name: Bootstrap health warning (first-run)
         if: steps.baseline-seed.outputs.seeded != 'true'
@@ -436,8 +394,6 @@ jobs:
         run: corepack enable
       - name: Install dependencies
         run: npm install
-      - name: Install biome CLI
-        run: npm install -g @biomejs/biome@2.4.10
       - name: Run lint
         run: npm run lint
 
@@ -502,17 +458,6 @@ jobs:
         run: corepack enable
       - name: Install dependencies
         run: npm install
-      - name: Install biome CLI
-        run: npm install -g @biomejs/biome@2.4.10
-      - name: Capture docs lint diff range
-        run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            echo "CI_BASE_SHA=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_ENV"
-            echo "CI_HEAD_SHA=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_ENV"
-          else
-            echo "CI_BASE_SHA=${{ github.event.merge_group.base_sha }}" >> "$GITHUB_ENV"
-            echo "CI_HEAD_SHA=${{ github.event.merge_group.head_sha }}" >> "$GITHUB_ENV"
-          fi
       - name: Run full check
         run: npm run check
 

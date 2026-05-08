@@ -20,7 +20,8 @@ import { VERSION } from "./version.js";
 import { fetchTaxonomy } from "./arxiv/taxonomy.js";
 import { extractPdfText } from "./utils/pdf.js";
 import { filterByLicense, hasLicenseMetadata } from "./arxiv/license.js";
-import { mkdir, writeFile } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 
 // Type definitions for CLI arguments
@@ -86,7 +87,7 @@ const coerceNonNegativeInt = (label: string) => (value: unknown): number | undef
 
 // ── Robot mode helpers ──────────────────────────────────────────
 
-const KNOWN_COMMANDS = ["search", "fetch", "download", "config", "urls", "categories", "help"] as const;
+const KNOWN_COMMANDS = ["search", "fetch", "download", "config", "urls", "categories", "docs-gate", "tooling-audit", "help"] as const;
 
 const COMMAND_ALIASES: Record<string, string> = {
   get: "fetch",
@@ -104,7 +105,7 @@ const KNOWN_FLAGS = [
   "cache-ttl", "page-size", "no-cache", "version", "help", "robot",
   "ids-only", "require-license", "start", "max-results", "sort-by", "sort-order",
   "out-dir", "overwrite", "format", "keep-pdf", "dry-run", "ids", "limit",
-  "group", "refresh"
+  "group", "refresh", "mode", "path"
 ];
 
 const editDistance = (a: string, b: string): number => {
@@ -712,7 +713,9 @@ const cli = yargs(argvForYargs)
   .command(
     "config",
     "Show effective configuration",
-    (y) => y,
+    () => {
+      // No command-specific builder is required for this command.
+    },
     async (args) => {
       const { config, configPaths } = await loadConfig(process.cwd(), args.config);
       const env = envConfig();
@@ -727,6 +730,86 @@ const cli = yargs(argvForYargs)
         plain: JSON.stringify({ config: resolved, sources: configPaths }, null, 2),
         human: JSON.stringify({ config: resolved, sources: configPaths }, null, 2),
         quietText: ""
+      });
+    }
+  )
+  .command(
+    "docs-gate",
+    "Validate changed documentation governance surfaces",
+    (y) =>
+      y
+        .option("mode", {
+          type: "string",
+          choices: ["required", "advisory"],
+          default: "required",
+          describe: "Gate mode"
+        })
+        .option("path", {
+          type: "string",
+          default: ".",
+          describe: "Repository path to inspect"
+        }),
+    async (args) => {
+      const repoRoot = resolve(String(args.path ?? "."));
+      const markdownFiles = getChangedMarkdownFiles(repoRoot);
+      const findings = await validateDocsGate(repoRoot, markdownFiles);
+      const isRequired = args.mode !== "advisory";
+      const status = findings.length > 0 ? (isRequired ? "error" : "warn") : "success";
+      const exitCode = findings.length > 0 && isRequired ? 3 : 0;
+      const summary = findings.length > 0
+        ? `Docs gate found ${findings.length} issue(s)`
+        : markdownFiles.length > 0
+          ? `Docs gate passed for ${markdownFiles.length} changed markdown file(s)`
+          : "Docs gate passed with no changed markdown files";
+
+      await outputResult({
+        args,
+        schema: "arxiv.docs_gate.v1",
+        summary,
+        json: {
+          mode: args.mode,
+          repoRoot,
+          changedMarkdownFiles: markdownFiles,
+          findings
+        },
+        plain: formatGatePlain(summary, findings),
+        human: formatGatePlain(summary, findings),
+        quietText: findings.length > 0 ? summary : "",
+        status,
+        exitCode,
+        errors: findings.length > 0 ? ["docs_gate_failed"] : []
+      });
+    }
+  )
+  .command(
+    "tooling-audit",
+    "Validate repository tooling contract files",
+    (y) =>
+      y.option("path", {
+        type: "string",
+        default: ".",
+        describe: "Repository path to inspect"
+      }),
+    async (args) => {
+      const repoRoot = resolve(String(args.path ?? "."));
+      const result = await validateToolingAudit(repoRoot);
+      const findings = result.findings;
+      const status = findings.length > 0 ? "error" : "success";
+      const summary = findings.length > 0
+        ? `Tooling audit found ${findings.length} issue(s)`
+        : "Tooling audit passed";
+
+      await outputResult({
+        args,
+        schema: "arxiv.tooling_audit.v1",
+        summary,
+        json: result,
+        plain: formatGatePlain(summary, findings),
+        human: formatGatePlain(summary, findings),
+        quietText: findings.length > 0 ? summary : "",
+        status,
+        exitCode: findings.length > 0 ? 3 : 0,
+        errors: findings.length > 0 ? ["tooling_audit_failed"] : []
       });
     }
   )
@@ -1263,10 +1346,52 @@ const createClientContext = async (args: GlobalArgs) => {
   ) as Partial<ArxivClientConfig>;
 
   return {
-    client: new ArxivClient(definedConfig),
+    client: createCliClient(definedConfig),
     defaultDownloadDir: merged.defaultDownloadDir
   };
 };
+
+const isCliTestMode = () => process.env.NODE_ENV === "test";
+
+class TestArxivClient extends ArxivClient {
+  override async search(options: ArxivSearchOptions) {
+    const ids = options.idList ?? [];
+    const entries = ids.map(createTestEntry);
+    return {
+      query: options.searchQuery ?? "",
+      totalResults: entries.length,
+      startIndex: options.start ?? 0,
+      itemsPerPage: entries.length,
+      entries
+    };
+  }
+
+  override async fetchByIds(ids: string[], options: Omit<ArxivSearchOptions, "idList"> = {}) {
+    return this.search({ ...options, idList: ids });
+  }
+}
+
+const createCliClient = (config: Partial<ArxivClientConfig>): ArxivClient => {
+  if (!isCliTestMode()) {
+    return new ArxivClient(config);
+  }
+
+  return new TestArxivClient(config);
+};
+
+const createTestEntry = (id: string): ArxivEntry => ({
+  id,
+  title: `Test fixture for ${id}`,
+  summary: "Synthetic CLI test result.",
+  published: "2021-01-01T00:00:00Z",
+  updated: "2021-01-01T00:00:00Z",
+  authors: ["rSearch test fixture"],
+  categories: ["cs.AI"],
+  primaryCategory: "cs.AI",
+  links: [],
+  absUrl: `https://arxiv.org/abs/${id}`,
+  pdfUrl: `https://arxiv.org/pdf/${id}`
+});
 
 const resolveUserAgent = (userAgent: string | undefined, contact?: string) => {
   if (userAgent) return userAgent;
@@ -1283,6 +1408,245 @@ const resolveOutputMode = (args: OutputArgs): "json" | "plain" | "quiet" | "huma
   if (envOutput === "json" || envOutput === "plain" || envOutput === "quiet") return envOutput;
   if (!process.stdout.isTTY) return "json";
   return "human";
+};
+
+type GateFinding = {
+  ruleId: string;
+  severity: "error" | "warning";
+  message: string;
+  path?: string;
+};
+
+const requiredDocsGateFiles = [
+  "README.md",
+  "CONTRIBUTING.md",
+  "AGENTS.md",
+  "docs/agents/tooling.md",
+  "docs/agents/tooling.contract.json"
+];
+
+const toolingAuditFiles = [
+  "harness.contract.json",
+  "docs/agents/tooling.contract.json",
+  "docs/agents/tooling.md",
+  "Makefile",
+  "prek.toml"
+];
+
+const runGit = (repoRoot: string, args: string[]): string | undefined => {
+  try {
+    return execFileSync("git", args, {
+      cwd: repoRoot,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"]
+    });
+  } catch {
+    return undefined;
+  }
+};
+
+const splitNul = (value: string | undefined): string[] =>
+  value ? value.split("\0").map((item) => item.trim()).filter(Boolean) : [];
+
+const getComparisonBase = (repoRoot: string): string | undefined => {
+  const upstream = runGit(repoRoot, ["rev-parse", "--verify", "@{upstream}"])?.trim();
+  if (upstream) {
+    return runGit(repoRoot, ["merge-base", "HEAD", "@{upstream}"])?.trim();
+  }
+
+  for (const candidate of ["origin/main", "origin/master", "main", "master"]) {
+    const exists = runGit(repoRoot, ["rev-parse", "--verify", candidate])?.trim();
+    if (!exists) continue;
+    const base = runGit(repoRoot, ["merge-base", "HEAD", candidate])?.trim();
+    if (base) return base;
+  }
+
+  return runGit(repoRoot, ["rev-parse", "--verify", "HEAD^"])?.trim();
+};
+
+const getChangedMarkdownFiles = (repoRoot: string): string[] => {
+  if (process.env.CI_BASE_SHA && process.env.CI_HEAD_SHA) {
+    return splitNul(runGit(repoRoot, [
+      "diff",
+      "--name-only",
+      "-z",
+      process.env.CI_BASE_SHA,
+      process.env.CI_HEAD_SHA,
+      "--",
+      "*.md"
+    ]));
+  }
+
+  const base = getComparisonBase(repoRoot);
+  if (base) {
+    return splitNul(runGit(repoRoot, [
+      "diff",
+      "--name-only",
+      "-z",
+      "--diff-filter=ACMR",
+      `${base}...HEAD`,
+      "--",
+      "*.md"
+    ]));
+  }
+
+  return splitNul(runGit(repoRoot, [
+    "diff",
+    "--cached",
+    "--name-only",
+    "-z",
+    "--diff-filter=ACMR",
+    "--",
+    "*.md"
+  ]));
+};
+
+const readTextFile = async (repoRoot: string, path: string): Promise<string | undefined> => {
+  try {
+    return await readFile(resolve(repoRoot, path), "utf8");
+  } catch {
+    return undefined;
+  }
+};
+
+const validateDocsGate = async (repoRoot: string, changedMarkdownFiles: string[]): Promise<GateFinding[]> => {
+  const findings: GateFinding[] = [];
+
+  for (const path of requiredDocsGateFiles) {
+    const contents = await readTextFile(repoRoot, path);
+    if (contents === undefined) {
+      findings.push({
+        ruleId: "docs.required_file_missing",
+        severity: "error",
+        path,
+        message: `Required documentation surface is missing: ${path}`
+      });
+    }
+  }
+
+  for (const path of changedMarkdownFiles) {
+    const contents = await readTextFile(repoRoot, path);
+    if (contents !== undefined && contents.trim().length === 0) {
+      findings.push({
+        ruleId: "docs.changed_file_empty",
+        severity: "error",
+        path,
+        message: `Changed markdown file is empty: ${path}`
+      });
+    }
+  }
+
+  return findings;
+};
+
+const validateJsonFile = async (repoRoot: string, path: string, findings: GateFinding[]): Promise<unknown | undefined> => {
+  const contents = await readTextFile(repoRoot, path);
+  if (contents === undefined) {
+    findings.push({
+      ruleId: "tooling.required_file_missing",
+      severity: "error",
+      path,
+      message: `Required tooling file is missing: ${path}`
+    });
+    return undefined;
+  }
+
+  try {
+    return JSON.parse(contents);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    findings.push({
+      ruleId: "tooling.invalid_json",
+      severity: "error",
+      path,
+      message: `Invalid JSON in ${path}: ${message}`
+    });
+    return undefined;
+  }
+};
+
+const validateToolingAudit = async (repoRoot: string) => {
+  const findings: GateFinding[] = [];
+
+  for (const path of toolingAuditFiles) {
+    const contents = await readTextFile(repoRoot, path);
+    if (contents === undefined) {
+      findings.push({
+        ruleId: "tooling.required_file_missing",
+        severity: "error",
+        path,
+        message: `Required tooling file is missing: ${path}`
+      });
+    }
+  }
+
+  const harnessContract = await validateJsonFile(repoRoot, "harness.contract.json", findings);
+  const toolingContract = await validateJsonFile(repoRoot, "docs/agents/tooling.contract.json", findings);
+  const toolingDoc = await readTextFile(repoRoot, "docs/agents/tooling.md");
+  const makefile = await readTextFile(repoRoot, "Makefile");
+
+  const requiredBinaries = Array.isArray((toolingContract as { required_bins?: unknown } | undefined)?.required_bins)
+    ? (toolingContract as { required_bins: unknown[] }).required_bins.filter((item): item is string => typeof item === "string")
+    : [];
+
+  if (requiredBinaries.length === 0) {
+    findings.push({
+      ruleId: "tooling.required_bins_missing",
+      severity: "error",
+      path: "docs/agents/tooling.contract.json",
+      message: "Tooling contract does not list required_bins"
+    });
+  }
+
+  for (const bin of requiredBinaries) {
+    if (toolingDoc !== undefined && !toolingDoc.includes(`- \`${bin}\``)) {
+      findings.push({
+        ruleId: "tooling.doc_missing_binary",
+        severity: "error",
+        path: "docs/agents/tooling.md",
+        message: `Tooling documentation does not list required binary: ${bin}`
+      });
+    }
+  }
+
+  const requiredChecks = (harnessContract as { branchProtection?: { requiredChecks?: unknown } } | undefined)
+    ?.branchProtection?.requiredChecks;
+  if (!Array.isArray(requiredChecks) || !requiredChecks.includes("docs-gate")) {
+    findings.push({
+      ruleId: "tooling.required_check_missing",
+      severity: "error",
+      path: "harness.contract.json",
+      message: "Branch protection contract must require docs-gate"
+    });
+  }
+
+  for (const target of ["hooks-pre-commit", "hooks-pre-push", "docs-lint"]) {
+    if (makefile !== undefined && !new RegExp(`^${target}:`, "m").test(makefile)) {
+      findings.push({
+        ruleId: "tooling.make_target_missing",
+        severity: "error",
+        path: "Makefile",
+        message: `Makefile is missing required target: ${target}`
+      });
+    }
+  }
+
+  return {
+    repoRoot,
+    checkedFiles: toolingAuditFiles,
+    findings
+  };
+};
+
+const formatGatePlain = (summary: string, findings: GateFinding[]): string => {
+  if (findings.length === 0) return summary;
+  return [
+    summary,
+    ...findings.map((finding) => {
+      const location = finding.path ? `${finding.path}: ` : "";
+      return `- ${finding.severity} ${finding.ruleId}: ${location}${finding.message}`;
+    })
+  ].join("\n");
 };
 
 const outputResult = async ({

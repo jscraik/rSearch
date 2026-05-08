@@ -1,0 +1,33 @@
+flowchart TD
+  UserRequest["User request"]
+  Decision{Record exists?}
+  query_test_32074ef4["query.test"]
+  UserRequest --> query_test_32074ef4
+  query_test_32074ef4 --> query_test_32074ef4_lookup["lookup query"]
+  query_test_32074ef4_lookup --> Decision
+  Decision -->|found| query_test_32074ef4_update["update or modify"]
+  Decision -->|not found| query_test_32074ef4_create["insert/create"]
+  query_test_32074ef4_update --> query_test_32074ef4_result["result"]
+  query_test_32074ef4_create --> query_test_32074ef4_result["result"]
+  cli_test_4851f28b["cli.test"]
+  UserRequest --> cli_test_4851f28b
+  cli_test_4851f28b --> cli_test_4851f28b_result["result"]
+  cli_99bb8840["cli"]
+  UserRequest --> cli_99bb8840
+  cli_99bb8840 --> cli_99bb8840_result["result"]
+  query_a8b77192["query"]
+  UserRequest --> query_a8b77192
+  query_a8b77192 --> query_a8b77192_lookup["lookup query"]
+  query_a8b77192_lookup --> Decision
+  Decision -->|found| query_a8b77192_update["update or modify"]
+  Decision -->|not found| query_a8b77192_create["insert/create"]
+  query_a8b77192_update --> query_a8b77192_result["result"]
+  query_a8b77192_create --> query_a8b77192_result["result"]
+  client_948fe603["client"]
+  UserRequest --> client_948fe603
+  client_948fe603 --> client_948fe603_result["result"]
+  rollout_check_6c0140db["rollout_check"]
+  UserRequest --> rollout_check_6c0140db
+  rollout_check_6c0140db --> rollout_check_6c0140db_result["result"]
+  classDef dbNode fill:#0ea5e9,color:#fff
+  classDef decisionNode fill:#0284c7,color:#fff
