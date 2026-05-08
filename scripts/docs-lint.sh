@@ -33,7 +33,7 @@ lint_changed_markdown() {
 
 if [[ -n "${CI_BASE_SHA:-}" && -n "${CI_HEAD_SHA:-}" ]]; then
 	mapfile -d '' changed_markdown < <(
-		git diff --name-only -z "$CI_BASE_SHA" "$CI_HEAD_SHA" -- '*.md'
+		git diff --name-only -z --diff-filter=ACMR "$CI_BASE_SHA" "$CI_HEAD_SHA" -- '*.md'
 	)
 	lint_changed_markdown "No changed markdown files detected for docs lint." "${changed_markdown[@]}"
 fi
