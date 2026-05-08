@@ -165,9 +165,11 @@ if [[ "$before_snapshot" != "$after_snapshot" ]]; then
 	exit 1
 fi
 
-git -C "$REPO_ROOT" restore --worktree -- \
-	.diagram/context/diagram-context.md \
-	.diagram/context/diagram-context.meta.json \
-	.diagram/manifest.json
+if [[ -z "$dirty_artifacts" ]]; then
+	git -C "$REPO_ROOT" restore --worktree -- \
+		.diagram/context/diagram-context.md \
+		.diagram/context/diagram-context.meta.json \
+		.diagram/manifest.json
+fi
 
 echo "Diagram freshness check passed."
