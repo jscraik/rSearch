@@ -231,9 +231,9 @@ jobs:
         run: |
           help_output="$(mktemp)"
           trap 'rm -f "$help_output"' EXIT
-          pnpm exec tsx src/cli.ts help >"$help_output"
+          npm exec -- tsx src/cli.ts help >"$help_output"
           if grep -q "drift-gate" "$help_output"; then
-            pnpm exec tsx src/cli.ts drift-gate \
+            npm exec -- tsx src/cli.ts drift-gate \
               --mode advisory \
               --json \
               --out artifacts/consistency-gate/consistency-drift-advisory-latest.json
@@ -322,9 +322,9 @@ jobs:
         run: |
           help_output="$(mktemp)"
           trap 'rm -f "$help_output"' EXIT
-          pnpm exec tsx src/cli.ts help >"$help_output"
+          npm exec -- tsx src/cli.ts help >"$help_output"
           if grep -q "drift-gate" "$help_output"; then
-            pnpm exec tsx src/cli.ts drift-gate \
+            npm exec -- tsx src/cli.ts drift-gate \
               --mode health \
               --json \
               --out artifacts/consistency-gate/health.json
