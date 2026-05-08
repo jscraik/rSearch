@@ -51,6 +51,11 @@ snapshot_artifacts() {
 		if [[ -d "$REPO_ROOT/$path" ]]; then
 			while IFS= read -r file; do
 				local rel_path="${file#$REPO_ROOT/}"
+				case "$rel_path" in
+					*.log)
+						continue
+						;;
+				esac
 				local checksum
 				checksum="$(normalized_checksum "$file" "$rel_path")"
 				printf '%s %s
@@ -74,7 +79,7 @@ normalized_checksum() {
 			sed '/^Generated: /d' "$file" | shasum -a 256 | awk '{print $1}'
 			;;
 		*/diagram-context.meta.json)
-			jq -c 'del(.generated_at, .last_generated_epoch, .changed, .context_sha256)' "$file" | shasum -a 256 | awk '{print $1}'
+			jq -c 'del(.generated_at, .git_head, .last_generated_epoch, .changed, .context_sha256)' "$file" | shasum -a 256 | awk '{print $1}'
 			;;
 		*/manifest.json)
 			jq -c 'del(.generatedAt)' "$file" | shasum -a 256 | awk '{print $1}'
@@ -146,5 +151,10 @@ if [[ "$before_snapshot" != "$after_snapshot" ]]; then
 	echo "Fix: run 'bash scripts/refresh-diagram-context.sh --force' and commit the updated artifacts."
 	exit 1
 fi
+
+git -C "$REPO_ROOT" restore --worktree -- \
+	.diagram/context/diagram-context.md \
+	.diagram/context/diagram-context.meta.json \
+	.diagram/manifest.json
 
 echo "Diagram freshness check passed."
