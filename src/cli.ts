@@ -1456,6 +1456,9 @@ const runGit = (repoRoot: string, args: string[]): string | undefined => {
 const splitNul = (value: string | undefined): string[] =>
   value ? value.split("\0").map((item) => item.trim()).filter(Boolean) : [];
 
+const gitCommitExists = (repoRoot: string, ref: string): boolean =>
+  runGit(repoRoot, ["cat-file", "-e", `${ref}^{commit}`]) !== undefined;
+
 const getComparisonBase = (repoRoot: string): string | undefined => {
   const upstream = runGit(repoRoot, ["rev-parse", "--verify", "@{upstream}"])?.trim();
   if (upstream) {
@@ -1480,10 +1483,27 @@ const gitDiffFailureFinding = (message: string): GateFinding => ({
 
 const getChangedMarkdownFiles = (repoRoot: string): ChangedMarkdownFiles => {
   if (process.env.CI_BASE_SHA && process.env.CI_HEAD_SHA) {
+    if (!gitCommitExists(repoRoot, process.env.CI_BASE_SHA)) {
+      return {
+        files: [],
+        findings: [
+          gitDiffFailureFinding(`CI_BASE_SHA does not resolve to a commit: ${process.env.CI_BASE_SHA}.`)
+        ]
+      };
+    }
+    if (!gitCommitExists(repoRoot, process.env.CI_HEAD_SHA)) {
+      return {
+        files: [],
+        findings: [
+          gitDiffFailureFinding(`CI_HEAD_SHA does not resolve to a commit: ${process.env.CI_HEAD_SHA}.`)
+        ]
+      };
+    }
     const output = runGit(repoRoot, [
       "diff",
       "--name-only",
       "-z",
+      "--diff-filter=ACMR",
       process.env.CI_BASE_SHA,
       process.env.CI_HEAD_SHA,
       "--",
