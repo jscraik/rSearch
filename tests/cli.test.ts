@@ -10,8 +10,10 @@ const cliPath = resolve(repoRoot, "src", "cli.ts");
 const emptySearchFeedUrl =
   "data:text/xml,%3Cfeed%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2005%2FAtom%22%20xmlns%3Aopensearch%3D%22http%3A%2F%2Fa9.com%2F-%2Fspec%2Fopensearch%2F1.1%2F%22%3E%3Copensearch%3AtotalResults%3E0%3C%2Fopensearch%3AtotalResults%3E%3C%2Ffeed%3E#";
 
+const testApiArgs = ["--api-base-url", emptySearchFeedUrl];
+
 const runCli = (args: string[], input?: string, env?: Record<string, string>) =>
-  spawnSync(process.execPath, ["--import", "tsx", cliPath, ...args], {
+  spawnSync(process.execPath, ["--import", "tsx", cliPath, ...testApiArgs, ...args], {
     cwd: repoRoot,
     env: { ...process.env, NODE_ENV: "test", ...env },
     encoding: "utf8",
