@@ -141,7 +141,8 @@ fi
 
 echo "Refreshing architecture diagrams for changed sensitive paths..."
 dirty_artifacts="$(
-	git -C "$REPO_ROOT" status --porcelain -- "${TRACKED_ARTIFACT_PATHS[@]}"
+	git -C "$REPO_ROOT" diff --name-only -- "${TRACKED_ARTIFACT_PATHS[@]}"
+	git -C "$REPO_ROOT" diff --cached --name-only -- "${TRACKED_ARTIFACT_PATHS[@]}"
 )"
 if [[ -n "$dirty_artifacts" ]]; then
 	echo "Error: tracked diagram artifacts have uncommitted local edits."
