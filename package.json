@@ -28,7 +28,7 @@
     "test": "vitest run",
     "docs:lint": "bash scripts/docs-lint.sh",
     "fmt": "biome format --write .",
-    "check": "npm run typecheck && npm run lint && npm test",
+    "check": "npm run typecheck && npm run lint && DOCS_LINT_SCOPE=staged npm run docs:lint && npm test",
     "audit": "npm audit --audit-level=high",
     "ci": "npm run typecheck && npm test && npm run build",
     "secrets:staged": "bash scripts/check-staged-secrets.sh",
