@@ -17,7 +17,7 @@ if command -v mise >/dev/null 2>&1; then
   mise trust --yes .mise.toml || true
   mise install
 fi
-if [[ -f scripts/prepare-worktree.sh ]]; then
+if [[ -f scripts/prepare-worktree.sh ]] && command -v pnpm >/dev/null 2>&1; then
   bash scripts/prepare-worktree.sh
 else
   npm install
@@ -41,7 +41,7 @@ if command -v mise >/dev/null 2>&1; then
   mise trust --yes .mise.toml || true
   mise install
 fi
-if [[ -f scripts/prepare-worktree.sh ]]; then
+if [[ -f scripts/prepare-worktree.sh ]] && command -v pnpm >/dev/null 2>&1; then
   bash scripts/prepare-worktree.sh
 else
   npm install
@@ -107,7 +107,7 @@ case "$release_branch" in
 esac
 
 git fetch --prune origin main "$release_branch"
-git checkout main
+git checkout --detach origin/main
 local_main_ahead_count="$(git rev-list --count origin/main..HEAD)"
 if [ "$local_main_ahead_count" -ne 0 ]; then
   echo "Local main is ahead of origin/main; aborting."
@@ -115,20 +115,18 @@ if [ "$local_main_ahead_count" -ne 0 ]; then
   exit 2
 fi
 
-git pull --ff-only origin main
-pull_status=$?
-if [ "$pull_status" -ne 0 ]; then
+if ! git pull --ff-only origin main; then
   local_main_ahead_count="$(git rev-list --count origin/main..HEAD 2>/dev/null || echo 0)"
   if [ "$local_main_ahead_count" -ne 0 ]; then
     echo "Local main is ahead of origin/main; aborting."
     echo "Reconcile local commits before running Release Finalize."
     exit 2
   fi
-  exit "$pull_status"
+  exit 1
 fi
 
 git merge --ff-only "origin/$release_branch"
-git push origin main
+git push origin HEAD:main
 
 echo "Merged $release_branch into main and pushed origin/main."
 echo "Optional PR follow-up:"
@@ -172,7 +170,7 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
       repo_slug="worktree"
     fi
     short_sha="$(git rev-parse --short HEAD)"
-    branch_base="jscraik/feature/$repo_slug-worktree-$short_sha"
+    branch_base="$repo_slug-worktree-$short_sha"
     branch_name="$branch_base"
     suffix=1
     while git show-ref --verify --quiet "refs/heads/$branch_name"; do
@@ -239,8 +237,7 @@ icon = "test"
 command = '''
 set -euo pipefail
 
-command -v vitest >/dev/null 2>&1
-vitest --version
+npm exec -- vitest --version
 '''
 
 [[actions]]
@@ -299,8 +296,7 @@ icon = "debug"
 command = '''
 set -euo pipefail
 
-command -v markdownlint-cli2 >/dev/null 2>&1
-markdownlint-cli2 --help
+npm exec -- markdownlint-cli2 --help
 '''
 
 [[actions]]
