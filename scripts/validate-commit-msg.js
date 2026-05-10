@@ -21,7 +21,7 @@ const CODEX_CO_AUTHOR_REGEX =
 
 function main() {
 	if (!COMMIT_MSG_FILE) {
-		console.error("Usage: validate-commit-msg.js <commit-msg-file>");
+		writeStderr("Usage: validate-commit-msg.js <commit-msg-file>\n");
 		process.exit(1);
 	}
 
@@ -29,7 +29,9 @@ function main() {
 	try {
 		commitMsg = readFileSync(COMMIT_MSG_FILE, "utf-8");
 	} catch (e) {
-		console.error(`Failed to read commit message file: ${e.message}`);
+		const message =
+			e && typeof e === "object" && "message" in e ? String(e.message) : String(e);
+		writeStderr(`Failed to read commit message file: ${message}\n`);
 		process.exit(1);
 	}
 
@@ -82,16 +84,20 @@ function main() {
 
 	// Output results
 	if (errors.length > 0) {
-		console.error("\n❌ Commit message validation failed:\n");
+		writeStderr("\n❌ Commit message validation failed:\n\n");
 		for (const error of errors) {
-			console.error(`  ✗ ${error}`);
+			writeStderr(`  ✗ ${error}\n`);
 		}
-		console.error(
-			"\nCommit message format example:\n  feat(scope): add new feature\n\n  Why this change is needed and what it impacts.\n\n  Co-authored-by: Codex <noreply@openai.com>",
+		writeStderr(
+			"\nCommit message format example:\n  feat(scope): add new feature\n\n  Why this change is needed and what it impacts.\n\n  Co-authored-by: Codex <noreply@openai.com>\n",
 		);
 		process.exit(1);
 	}
 	process.exit(0);
+}
+
+function writeStderr(message) {
+	process.stderr.write(message);
 }
 
 function getBranchName() {

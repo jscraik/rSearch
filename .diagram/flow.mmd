@@ -1,0 +1,20 @@
+flowchart TD
+  Start(["Start"])
+  query_test_32074ef4["query.test"]
+  Start --> query_test_32074ef4
+  parser_test_3c7414cf["parser.test"]
+  query_test_32074ef4 --> parser_test_3c7414cf
+  license_test_3c4f0a71["license.test"]
+  parser_test_3c7414cf --> license_test_3c4f0a71
+  client_test_4b44c0f5["client.test"]
+  license_test_3c4f0a71 --> client_test_4b44c0f5
+  cli_test_4851f28b["cli.test"]
+  client_test_4b44c0f5 --> cli_test_4851f28b
+  version_5ca4f385["version"]
+  cli_test_4851f28b --> version_5ca4f385
+  index_1bc04b52["index"]
+  version_5ca4f385 --> index_1bc04b52
+  config_b79606fb["config"]
+  index_1bc04b52 --> config_b79606fb
+  End(["End"])
+  config_b79606fb --> End

@@ -1,0 +1,87 @@
+{
+  "generatedAt": "2026-05-08T15:34:36.724Z",
+  "rootPath": "/private/tmp/rsearch-pr53",
+  "diagramDir": ".diagram",
+  "diagrams": [
+    {
+      "type": "architecture",
+      "file": "architecture.mmd",
+      "outputPath": ".diagram/architecture.mmd",
+      "lines": 40,
+      "bytes": 1623,
+      "isPlaceholder": false
+    },
+    {
+      "type": "auth",
+      "file": "auth.mmd",
+      "outputPath": ".diagram/auth.mmd",
+      "lines": 3,
+      "bytes": 58,
+      "isPlaceholder": false
+    },
+    {
+      "type": "class",
+      "file": "class.mmd",
+      "outputPath": ".diagram/class.mmd",
+      "lines": 11,
+      "bytes": 166,
+      "isPlaceholder": false
+    },
+    {
+      "type": "database",
+      "file": "database.mmd",
+      "outputPath": ".diagram/database.mmd",
+      "lines": 34,
+      "bytes": 1526,
+      "isPlaceholder": false
+    },
+    {
+      "type": "dependency",
+      "file": "dependency.mmd",
+      "outputPath": ".diagram/dependency.mmd",
+      "lines": 86,
+      "bytes": 5958,
+      "isPlaceholder": false
+    },
+    {
+      "type": "events",
+      "file": "events.mmd",
+      "outputPath": ".diagram/events.mmd",
+      "lines": 3,
+      "bytes": 58,
+      "isPlaceholder": false
+    },
+    {
+      "type": "flow",
+      "file": "flow.mmd",
+      "outputPath": ".diagram/flow.mmd",
+      "lines": 21,
+      "bytes": 679,
+      "isPlaceholder": false
+    },
+    {
+      "type": "security",
+      "file": "security.mmd",
+      "outputPath": ".diagram/security.mmd",
+      "lines": 10,
+      "bytes": 290,
+      "isPlaceholder": false
+    },
+    {
+      "type": "sequence",
+      "file": "sequence.mmd",
+      "outputPath": ".diagram/sequence.mmd",
+      "lines": 3,
+      "bytes": 54,
+      "isPlaceholder": false
+    },
+    {
+      "type": "user",
+      "file": "user.mmd",
+      "outputPath": ".diagram/user.mmd",
+      "lines": 18,
+      "bytes": 471,
+      "isPlaceholder": false
+    }
+  ]
+}

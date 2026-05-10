@@ -1,0 +1,39 @@
+graph TD
+  subgraph sg_scripts_16728d18["scripts"]
+    node_scripts_commit_7ed92b70["commit"]
+    node_scripts_setup_git_hooks_2ed98c53["setup-git-hooks"]
+    node_scripts_update_changelog_2da7451c["update-changelog"]
+    node_scripts_validate_commit_msg_c49346f6["validate-commit-msg"]
+  end
+  subgraph sg_scripts_hook_governance_22d136eb["scripts/hook-governance"]
+    node_scripts_hook_governance_evaluate_docstring_ratch_407d0d3c["evaluate_docstring_ratchet"]
+    node_scripts_hook_governance_rollout_check_7c494353["rollout_check"]
+  end
+  subgraph sg_src_f27fede2["src"]
+    node_src_cli_50037f41["cli"]
+    node_src_config_cad1d6da["config"]
+    node_src_index_04ad1fb1["index"]
+    node_src_version_6148399c["version"]
+  end
+  subgraph sg_src_arxiv_bba657a0["src/arxiv"]
+    node_src_arxiv_client_8fb969a5["client"]
+    node_src_arxiv_license_5fc7ec9c["license"]
+    node_src_arxiv_parser_233901f3["parser"]
+    node_src_arxiv_query_adab05ed["query"]
+    node_src_arxiv_ratelimiter_85b2efd8["rateLimiter"]
+    node_src_arxiv_taxonomy_ce8b11d2["taxonomy"]
+    node_src_arxiv_types_89584dfa["types"]
+  end
+  subgraph sg_src_utils_e236f4b4["src/utils"]
+    node_src_utils_errors_6722e594["errors"]
+    node_src_utils_io_e79ec14c["io"]
+    node_src_utils_output_38277498["output"]
+    node_src_utils_pdf_650439c5["pdf"]
+  end
+  subgraph sg_tests_04d13fd0["tests"]
+    node_tests_cli_test_7d87d79c["cli.test"]
+    node_tests_client_test_492a3713["client.test"]
+    node_tests_license_test_6bddf6e7["license.test"]
+    node_tests_parser_test_7edaf93e["parser.test"]
+    node_tests_query_test_61452b15["query.test"]
+  end
