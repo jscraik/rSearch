@@ -76,13 +76,13 @@ normalized_checksum() {
 
 	case "$rel_path" in
 		*/diagram-context.md)
-			sed '/^Generated: /d' "$file" | shasum -a 256 | awk '{print $1}'
+			sed '/^Generated: /d' "$file" | perl -0pe 's/\n+\z/\n/' | shasum -a 256 | awk '{print $1}'
 			;;
 		*/diagram-context.meta.json)
 			jq -c 'del(.generated_at, .git_head, .last_generated_epoch, .changed, .context_sha256)' "$file" | shasum -a 256 | awk '{print $1}'
 			;;
 		*/manifest.json)
-			jq -c 'del(.generatedAt)' "$file" | shasum -a 256 | awk '{print $1}'
+			jq -c 'del(.generatedAt, .rootPath)' "$file" | shasum -a 256 | awk '{print $1}'
 			;;
 		*)
 			shasum -a 256 "$file" | awk '{print $1}'

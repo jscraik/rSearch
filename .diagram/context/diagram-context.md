@@ -1,6 +1,6 @@
 # Diagram Context Pack
 
-Generated: 2026-05-08T15:25:13Z
+Generated: 2026-05-08T15:34:36Z
 
 ## architecture
 
@@ -280,4 +280,3 @@ flowchart LR
   classDef userNode fill:#16a34a,color:#fff
 
 ```
-

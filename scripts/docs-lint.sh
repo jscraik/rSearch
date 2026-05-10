@@ -32,16 +32,24 @@ lint_changed_markdown() {
 }
 
 if [[ -n "${CI_BASE_SHA:-}" && -n "${CI_HEAD_SHA:-}" ]]; then
-	mapfile -d '' changed_markdown < <(
-		git diff --name-only -z "$CI_BASE_SHA" "$CI_HEAD_SHA" -- '*.md'
-	)
+	changed_file_list="$(mktemp)"
+	trap 'rm -f "$changed_file_list"' EXIT
+	if ! git diff --name-only -z --diff-filter=ACMR "$CI_BASE_SHA" "$CI_HEAD_SHA" -- '*.md' >"$changed_file_list"; then
+		echo "Unable to resolve docs lint diff range: $CI_BASE_SHA..$CI_HEAD_SHA" >&2
+		exit 1
+	fi
+	mapfile -d '' changed_markdown <"$changed_file_list"
 	lint_changed_markdown "No changed markdown files detected for docs lint." "${changed_markdown[@]}"
 fi
 
 if [[ "${DOCS_LINT_SCOPE:-all}" == "staged" ]]; then
-	mapfile -d '' changed_markdown < <(
-		git diff --cached --name-only -z --diff-filter=ACMR -- '*.md'
-	)
+	changed_file_list="$(mktemp)"
+	trap 'rm -f "$changed_file_list"' EXIT
+	if ! git diff --cached --name-only -z --diff-filter=ACMR -- '*.md' >"$changed_file_list"; then
+		echo "Unable to resolve staged docs lint diff." >&2
+		exit 1
+	fi
+	mapfile -d '' changed_markdown <"$changed_file_list"
 	lint_changed_markdown "No staged markdown files detected for docs lint." "${changed_markdown[@]}"
 fi
 

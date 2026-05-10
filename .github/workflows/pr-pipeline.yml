@@ -229,8 +229,11 @@ jobs:
           fi
       - name: Run advisory drift gate
         run: |
-          if pnpm exec tsx src/cli.ts help 2>/dev/null | grep -q "drift-gate"; then
-            pnpm exec tsx src/cli.ts drift-gate \
+          help_output="$(mktemp)"
+          trap 'rm -f "$help_output"' EXIT
+          npm exec -- tsx src/cli.ts help >"$help_output"
+          if grep -q "drift-gate" "$help_output"; then
+            npm exec -- tsx src/cli.ts drift-gate \
               --mode advisory \
               --json \
               --out artifacts/consistency-gate/consistency-drift-advisory-latest.json
@@ -317,8 +320,11 @@ jobs:
       - name: Run health drift gate
         if: steps.baseline-seed.outputs.seeded == 'true'
         run: |
-          if pnpm exec tsx src/cli.ts help 2>/dev/null | grep -q "drift-gate"; then
-            pnpm exec tsx src/cli.ts drift-gate \
+          help_output="$(mktemp)"
+          trap 'rm -f "$help_output"' EXIT
+          npm exec -- tsx src/cli.ts help >"$help_output"
+          if grep -q "drift-gate" "$help_output"; then
+            npm exec -- tsx src/cli.ts drift-gate \
               --mode health \
               --json \
               --out artifacts/consistency-gate/health.json
@@ -445,6 +451,8 @@ jobs:
     needs: [risk-policy-gate]
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "24"
@@ -452,6 +460,15 @@ jobs:
         run: corepack enable
       - name: Install dependencies
         run: npm install
+      - name: Capture docs lint diff range
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "CI_BASE_SHA=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_ENV"
+            echo "CI_HEAD_SHA=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_ENV"
+          else
+            echo "CI_BASE_SHA=${{ github.event.merge_group.base_sha }}" >> "$GITHUB_ENV"
+            echo "CI_HEAD_SHA=${{ github.event.merge_group.head_sha }}" >> "$GITHUB_ENV"
+          fi
       - name: Run full check
         run: npm run check
 
