@@ -145,7 +145,7 @@
       },
       {
         "tool": "uv",
-        "version": "0.10.9"
+        "version": "0.11.3"
       },
       {
         "tool": "cargo:prek",
@@ -398,7 +398,6 @@
             "react",
             "react-dom",
             "next",
-            "vite",
             "tailwindcss",
             "@storybook/react",
             "@storybook/react-vite",
