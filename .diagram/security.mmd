@@ -1,0 +1,9 @@
+flowchart TD
+  Untrusted["Untrusted input"]
+  config_b79606fb["config"]
+  Untrusted --> config_b79606fb
+  cli_99bb8840["cli"]
+  Untrusted --> cli_99bb8840
+  setup_git_hooks_70750d40["setup-git-hooks"]
+  Untrusted --> setup_git_hooks_70750d40
+  classDef securityNode fill:#dc2626,color:#fff
