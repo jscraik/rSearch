@@ -34,7 +34,11 @@ lint_changed_markdown() {
 if [[ -n "${CI_BASE_SHA:-}" && -n "${CI_HEAD_SHA:-}" ]]; then
 	changed_file_list="$(mktemp)"
 	trap 'rm -f "$changed_file_list"' EXIT
-	if ! git diff --name-only -z "$CI_BASE_SHA" "$CI_HEAD_SHA" -- '*.md' >"$changed_file_list"; then
+	if ! diff_base="$(git merge-base "$CI_BASE_SHA" "$CI_HEAD_SHA")"; then
+		echo "Unable to resolve docs lint merge base: $CI_BASE_SHA...$CI_HEAD_SHA" >&2
+		exit 1
+	fi
+	if ! git diff --name-only -z --diff-filter=ACMR "$diff_base" "$CI_HEAD_SHA" -- '*.md' >"$changed_file_list"; then
 		echo "Unable to resolve docs lint diff range: $CI_BASE_SHA..$CI_HEAD_SHA" >&2
 		exit 1
 	fi

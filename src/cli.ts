@@ -1351,7 +1351,7 @@ const createClientContext = async (args: GlobalArgs) => {
   };
 };
 
-const isCliTestMode = () => process.env.NODE_ENV === "test";
+const isCliTestMode = () => process.env.RSEARCH_USE_TEST_CLIENT === "1";
 
 class TestArxivClient extends ArxivClient {
   override async search(options: ArxivSearchOptions) {

@@ -463,12 +463,16 @@ jobs:
       - name: Capture docs lint diff range
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            echo "CI_BASE_SHA=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_ENV"
-            echo "CI_HEAD_SHA=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_ENV"
+            base_sha="${{ github.event.pull_request.base.sha }}"
+            head_sha="${{ github.event.pull_request.head.sha }}"
           else
-            echo "CI_BASE_SHA=${{ github.event.merge_group.base_sha }}" >> "$GITHUB_ENV"
-            echo "CI_HEAD_SHA=${{ github.event.merge_group.head_sha }}" >> "$GITHUB_ENV"
+            base_sha="${{ github.event.merge_group.base_sha }}"
+            head_sha="${{ github.event.merge_group.head_sha }}"
           fi
+          git cat-file -e "$base_sha^{commit}"
+          git cat-file -e "$head_sha^{commit}"
+          echo "CI_BASE_SHA=$base_sha" >> "$GITHUB_ENV"
+          echo "CI_HEAD_SHA=$head_sha" >> "$GITHUB_ENV"
       - name: Run full check
         run: npm run check
 
