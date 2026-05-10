@@ -11,7 +11,7 @@ const cliPath = resolve(repoRoot, "src", "cli.ts");
 const runCli = (args: string[], input?: string, env?: Record<string, string>) =>
   spawnSync(process.execPath, ["--import", "tsx", cliPath, ...args], {
     cwd: repoRoot,
-    env: { ...process.env, NODE_ENV: "test", ...env },
+    env: { ...process.env, NODE_ENV: "test", RSEARCH_USE_TEST_CLIENT: "1", ...env },
     encoding: "utf8",
     input
   });
