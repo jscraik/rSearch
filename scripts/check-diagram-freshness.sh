@@ -10,6 +10,12 @@ TRACKED_ARTIFACT_PATHS=(
 	".diagram/context/diagram-context.meta.json"
 )
 
+RESTORE_ARTIFACT_PATHS=(
+	".diagram/context/diagram-context.md"
+	".diagram/context/diagram-context.meta.json"
+	".diagram/manifest.json"
+)
+
 is_ignored_change() {
 	local changed_path="$1"
 
@@ -140,6 +146,14 @@ if [[ "$should_refresh" -ne 1 ]]; then
 fi
 
 echo "Refreshing architecture diagrams for changed sensitive paths..."
+local_artifact_edits="$(git -C "$REPO_ROOT" status --porcelain -- "${RESTORE_ARTIFACT_PATHS[@]}")"
+if [[ -n "$local_artifact_edits" ]]; then
+	echo "Error: diagram artifacts have local edits; refusing to refresh because it could overwrite work."
+	printf '%s\n' "$local_artifact_edits"
+	echo "Fix: commit, stash, or revert those artifact edits before running this check."
+	exit 1
+fi
+
 before_snapshot="$(snapshot_artifacts)"
 bash "$REPO_ROOT/scripts/refresh-diagram-context.sh" --force --quiet
 after_snapshot="$(snapshot_artifacts)"
@@ -152,9 +166,6 @@ if [[ "$before_snapshot" != "$after_snapshot" ]]; then
 	exit 1
 fi
 
-git -C "$REPO_ROOT" restore --worktree -- \
-	.diagram/context/diagram-context.md \
-	.diagram/context/diagram-context.meta.json \
-	.diagram/manifest.json
+git -C "$REPO_ROOT" restore --worktree -- "${RESTORE_ARTIFACT_PATHS[@]}"
 
 echo "Diagram freshness check passed."
