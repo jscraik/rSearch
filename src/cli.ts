@@ -752,14 +752,17 @@ const cli = yargs(argvForYargs)
     async (args) => {
       const repoRoot = resolve(String(args.path ?? "."));
       const markdownFiles = getChangedMarkdownFiles(repoRoot);
-      const findings = await validateDocsGate(repoRoot, markdownFiles);
+      const findings = [
+        ...markdownFiles.findings,
+        ...(await validateDocsGate(repoRoot, markdownFiles.files))
+      ];
       const isRequired = args.mode !== "advisory";
       const status = findings.length > 0 ? (isRequired ? "error" : "warn") : "success";
       const exitCode = findings.length > 0 && isRequired ? 3 : 0;
       const summary = findings.length > 0
         ? `Docs gate found ${findings.length} issue(s)`
-        : markdownFiles.length > 0
-          ? `Docs gate passed for ${markdownFiles.length} changed markdown file(s)`
+        : markdownFiles.files.length > 0
+          ? `Docs gate passed for ${markdownFiles.files.length} changed markdown file(s)`
           : "Docs gate passed with no changed markdown files";
 
       await outputResult({
@@ -769,7 +772,7 @@ const cli = yargs(argvForYargs)
         json: {
           mode: args.mode,
           repoRoot,
-          changedMarkdownFiles: markdownFiles,
+          changedMarkdownFiles: markdownFiles.files,
           findings
         },
         plain: formatGatePlain(summary, findings),
@@ -1351,7 +1354,7 @@ const createClientContext = async (args: GlobalArgs) => {
   };
 };
 
-const isCliTestMode = () => process.env.NODE_ENV === "test";
+const isCliTestMode = () => process.env.RSEARCH_USE_TEST_CLIENT === "1";
 
 class TestArxivClient extends ArxivClient {
   override async search(options: ArxivSearchOptions) {
@@ -1417,6 +1420,11 @@ type GateFinding = {
   path?: string;
 };
 
+type ChangedMarkdownFiles = {
+  files: string[];
+  findings: GateFinding[];
+};
+
 const requiredDocsGateFiles = [
   "README.md",
   "CONTRIBUTING.md",
@@ -1448,6 +1456,9 @@ const runGit = (repoRoot: string, args: string[]): string | undefined => {
 const splitNul = (value: string | undefined): string[] =>
   value ? value.split("\0").map((item) => item.trim()).filter(Boolean) : [];
 
+const gitCommitExists = (repoRoot: string, ref: string): boolean =>
+  runGit(repoRoot, ["cat-file", "-e", `${ref}^{commit}`]) !== undefined;
+
 const getComparisonBase = (repoRoot: string): string | undefined => {
   const upstream = runGit(repoRoot, ["rev-parse", "--verify", "@{upstream}"])?.trim();
   if (upstream) {
@@ -1464,22 +1475,56 @@ const getComparisonBase = (repoRoot: string): string | undefined => {
   return runGit(repoRoot, ["rev-parse", "--verify", "HEAD^"])?.trim();
 };
 
-const getChangedMarkdownFiles = (repoRoot: string): string[] => {
+const gitDiffFailureFinding = (message: string): GateFinding => ({
+  ruleId: "docs.git_diff_failed",
+  severity: "error",
+  message
+});
+
+const getChangedMarkdownFiles = (repoRoot: string): ChangedMarkdownFiles => {
   if (process.env.CI_BASE_SHA && process.env.CI_HEAD_SHA) {
-    return splitNul(runGit(repoRoot, [
+    if (!gitCommitExists(repoRoot, process.env.CI_BASE_SHA)) {
+      return {
+        files: [],
+        findings: [
+          gitDiffFailureFinding(`CI_BASE_SHA does not resolve to a commit: ${process.env.CI_BASE_SHA}.`)
+        ]
+      };
+    }
+    if (!gitCommitExists(repoRoot, process.env.CI_HEAD_SHA)) {
+      return {
+        files: [],
+        findings: [
+          gitDiffFailureFinding(`CI_HEAD_SHA does not resolve to a commit: ${process.env.CI_HEAD_SHA}.`)
+        ]
+      };
+    }
+    const output = runGit(repoRoot, [
       "diff",
       "--name-only",
       "-z",
+      "--diff-filter=ACMR",
       process.env.CI_BASE_SHA,
       process.env.CI_HEAD_SHA,
       "--",
       "*.md"
-    ]));
+    ]);
+    if (output === undefined) {
+      return {
+        files: [],
+        findings: [
+          gitDiffFailureFinding(
+            "Unable to compute changed markdown files from CI_BASE_SHA/CI_HEAD_SHA."
+          )
+        ]
+      };
+    }
+    return { files: splitNul(output), findings: [] };
   }
 
   const base = getComparisonBase(repoRoot);
   if (base) {
-    return splitNul(runGit(repoRoot, [
+    const output = runGit(repoRoot, [
       "diff",
       "--name-only",
       "-z",
@@ -1487,10 +1532,21 @@ const getChangedMarkdownFiles = (repoRoot: string): string[] => {
       `${base}...HEAD`,
       "--",
       "*.md"
-    ]));
+    ]);
+    if (output === undefined) {
+      return {
+        files: [],
+        findings: [
+          gitDiffFailureFinding(
+            `Unable to compute changed markdown files from comparison base ${base}.`
+          )
+        ]
+      };
+    }
+    return { files: splitNul(output), findings: [] };
   }
 
-  return splitNul(runGit(repoRoot, [
+  const output = runGit(repoRoot, [
     "diff",
     "--cached",
     "--name-only",
@@ -1498,7 +1554,16 @@ const getChangedMarkdownFiles = (repoRoot: string): string[] => {
     "--diff-filter=ACMR",
     "--",
     "*.md"
-  ]));
+  ]);
+  if (output === undefined) {
+    return {
+      files: [],
+      findings: [
+        gitDiffFailureFinding("Unable to compute changed markdown files from staged changes.")
+      ]
+    };
+  }
+  return { files: splitNul(output), findings: [] };
 };
 
 const readTextFile = async (repoRoot: string, path: string): Promise<string | undefined> => {

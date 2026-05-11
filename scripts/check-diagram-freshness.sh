@@ -140,6 +140,19 @@ if [[ "$should_refresh" -ne 1 ]]; then
 fi
 
 echo "Refreshing architecture diagrams for changed sensitive paths..."
+dirty_artifacts="$(
+	{
+		git -C "$REPO_ROOT" diff --name-only -- "${TRACKED_ARTIFACT_PATHS[@]}"
+		git -C "$REPO_ROOT" diff --cached --name-only -- "${TRACKED_ARTIFACT_PATHS[@]}"
+	} | awk 'NF { print }' | sort -u
+)"
+if [[ -n "$dirty_artifacts" ]]; then
+	echo "Error: diagram artifacts have uncommitted changes before refresh." >&2
+	echo "$dirty_artifacts" >&2
+	echo "Fix: commit, stash, or discard those edits before running the freshness check." >&2
+	exit 1
+fi
+
 before_snapshot="$(snapshot_artifacts)"
 bash "$REPO_ROOT/scripts/refresh-diagram-context.sh" --force --quiet
 after_snapshot="$(snapshot_artifacts)"
@@ -152,9 +165,11 @@ if [[ "$before_snapshot" != "$after_snapshot" ]]; then
 	exit 1
 fi
 
-git -C "$REPO_ROOT" restore --worktree -- \
-	.diagram/context/diagram-context.md \
-	.diagram/context/diagram-context.meta.json \
-	.diagram/manifest.json
+if [[ -z "$dirty_artifacts" ]]; then
+	git -C "$REPO_ROOT" restore --worktree -- \
+		.diagram/context/diagram-context.md \
+		.diagram/context/diagram-context.meta.json \
+		.diagram/manifest.json
+fi
 
 echo "Diagram freshness check passed."
