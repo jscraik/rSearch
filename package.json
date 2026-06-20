@@ -70,7 +70,7 @@
     "fast-xml-parser": "^5.5.10",
     "pdf-parse": "^2.4.5",
     "yargs": "^18.0.0",
-    "zod": "^4.3.6"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.10",
