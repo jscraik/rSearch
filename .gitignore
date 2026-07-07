@@ -16,3 +16,4 @@ FORJAMIE.md
 
 # Codex hook conformance report - generated at runtime, not committed
 /.codex/hook-conformance.json
+.codex/config.toml

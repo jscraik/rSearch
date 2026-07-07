@@ -121,3 +121,7 @@ Fix:
 - Automated checks: vale run on 2026-01-07 (0 errors, 0 warnings).
 - Review artifact: Self-review completed on 2026-01-07.
 - Deviations: None.
+
+## Link Policy
+
+No third-party directory, marketplace, mirror, sponsorship, or promotional links without maintainer approval.

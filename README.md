@@ -334,3 +334,9 @@ python3 /Users/jamiecraik/.codex/scripts/plan-graph-lint.py .agent/PLANS.md
 
 - `/Users/jamiecraik/.codex/instructions/agent-first-scaffold-spec.md`
 <!-- AGENT-FIRST-WORKFLOW:END -->
+
+## Distribution
+
+Official installation instructions are maintained in this repository only.
+
+Third-party indexes or mirrors may list this project, but they are not affiliated with, endorsed by, or maintained by this project unless explicitly stated here.
