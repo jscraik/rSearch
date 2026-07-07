@@ -17,11 +17,7 @@ if command -v mise >/dev/null 2>&1; then
   mise trust --yes .mise.toml || true
   mise install
 fi
-if [[ -f scripts/prepare-worktree.sh ]] && command -v pnpm >/dev/null 2>&1; then
-  bash scripts/prepare-worktree.sh
-else
-  npm install
-fi
+npm ci || npm install
 '''
 
 [[actions]]
@@ -41,11 +37,7 @@ if command -v mise >/dev/null 2>&1; then
   mise trust --yes .mise.toml || true
   mise install
 fi
-if [[ -f scripts/prepare-worktree.sh ]] && command -v pnpm >/dev/null 2>&1; then
-  bash scripts/prepare-worktree.sh
-else
-  npm install
-fi
+npm ci || npm install
 '''
 
 [[actions]]
@@ -106,15 +98,17 @@ case "$release_branch" in
     ;;
 esac
 
-git fetch --prune origin main "$release_branch"
-git checkout --detach origin/main
-local_main_ahead_count="$(git rev-list --count origin/main..HEAD)"
-if [ "$local_main_ahead_count" -ne 0 ]; then
-  echo "Local main is ahead of origin/main; aborting."
-  echo "Reconcile local commits before running Release Finalize."
-  exit 2
+git fetch --prune origin main "$release_branch:refs/remotes/origin/$release_branch"
+if git show-ref --verify --quiet refs/heads/main; then
+  local_main_ahead_count="$(git rev-list --count origin/main..main)"
+  if [ "$local_main_ahead_count" -ne 0 ]; then
+    echo "Local main is ahead of origin/main; aborting."
+    echo "Reconcile local commits before running Release Finalize."
+    exit 2
+  fi
 fi
 
+git checkout --detach origin/main
 if ! git pull --ff-only origin main; then
   local_main_ahead_count="$(git rev-list --count origin/main..HEAD 2>/dev/null || echo 0)"
   if [ "$local_main_ahead_count" -ne 0 ]; then
