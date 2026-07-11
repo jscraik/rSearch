@@ -4,6 +4,32 @@
 
 set -euo pipefail
 
+prepend_standard_tool_paths() {
+	local candidate
+	for candidate in \
+		"$HOME/.local/share/mise/shims" \
+		"$HOME/.local/bin" \
+		"/opt/homebrew/bin" \
+		"/opt/homebrew/sbin" \
+		"/usr/local/bin" \
+		"/usr/sbin" \
+		"/sbin"; do
+		if [[ -d "$candidate" && ":$PATH:" != *":$candidate:"* ]]; then
+			PATH="$candidate:$PATH"
+		fi
+	done
+	export PATH
+}
+
+prepend_standard_tool_paths
+
+if [[ "${BASH_VERSINFO[0]:-0}" -lt 4 && -z "${CHECK_ENVIRONMENT_REEXECED:-}" ]]; then
+	if [[ -x "/opt/homebrew/bin/bash" ]]; then
+		export CHECK_ENVIRONMENT_REEXECED=1
+		exec "/opt/homebrew/bin/bash" "$0" "$@"
+	fi
+fi
+
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 CONTRACT_PATH="$REPO_ROOT/harness.contract.json"
@@ -154,12 +180,76 @@ done
 for action in "${required_codex_actions[@]}"; do
 	name="${action%%|*}"
 	icon="${action##*|}"
-	if ! awk -v name="$name" -v icon="$icon" '
-		prev == "name = \"" name "\"" && $0 == "icon = \"" icon "\"" { found = 1 }
-		{ prev = $0 }
-		END { exit found ? 0 : 1 }
-	' "$CODEX_ENVIRONMENT_PATH"; then
+	action_validation_exit=0
+	awk -v wanted_name="$name" -v wanted_icon="$icon" '
+		function trim_quotes(value) {
+			sub(/^[[:space:]]+/, "", value)
+			sub(/[[:space:]]+$/, "", value)
+			sub(/^"/, "", value)
+			sub(/"$/, "", value)
+			return value
+		}
+
+		function flush_action() {
+			if (in_action && current_name == wanted_name && current_icon == wanted_icon) {
+				matched_action = 1
+				if (has_command) {
+					valid_action = 1
+				}
+			}
+			current_name = ""
+			current_icon = ""
+			has_command = 0
+		}
+
+		/^\[\[actions\]\][[:space:]]*$/ {
+			flush_action()
+			in_action = 1
+			next
+		}
+
+		in_action && /^\[\[/ {
+			flush_action()
+			in_action = 0
+			next
+		}
+
+		in_action {
+			if ($0 ~ /^[[:space:]]*name[[:space:]]*=/) {
+				line = $0
+				sub(/^[^=]*=[[:space:]]*/, "", line)
+				current_name = trim_quotes(line)
+			} else if ($0 ~ /^[[:space:]]*icon[[:space:]]*=/) {
+				line = $0
+				sub(/^[^=]*=[[:space:]]*/, "", line)
+				current_icon = trim_quotes(line)
+			} else if ($0 ~ /^[[:space:]]*command[[:space:]]*=/) {
+				has_command = 1
+			}
+		}
+
+		END {
+			flush_action()
+			if (!matched_action) {
+				exit 2
+			}
+			if (!valid_action) {
+				exit 3
+			}
+			exit 0
+		}
+	' "$CODEX_ENVIRONMENT_PATH" || action_validation_exit=$?
+
+	if [[ "$action_validation_exit" -eq 2 ]]; then
 		echo "Error: Codex environment action '$name' is missing or mapped to the wrong icon in $CODEX_ENVIRONMENT_PATH"
+		exit 1
+	fi
+	if [[ "$action_validation_exit" -eq 3 ]]; then
+		echo "Error: Codex environment action '$name' is missing a command in $CODEX_ENVIRONMENT_PATH"
+		exit 1
+	fi
+	if [[ "$action_validation_exit" -ne 0 ]]; then
+		echo "Error: failed to validate Codex environment action '$name' in $CODEX_ENVIRONMENT_PATH"
 		exit 1
 	fi
 done
@@ -342,6 +432,19 @@ if [[ -f "$PACKAGE_JSON_PATH" ]]; then
 		esac
 	}
 
+	has_required_package_or_global_tool() {
+		local pkg="$1"
+		local dependency_type="$2"
+		if has_required_package "$pkg" "$dependency_type"; then
+			return 0
+		fi
+		# design-system-guidance can be satisfied by the globally managed CLI.
+		if [[ "$pkg" == "@brainwav/design-system-guidance" ]] && command -v design-system-guidance >/dev/null 2>&1; then
+			return 0
+		fi
+		return 1
+	}
+
 	required_package_specs=("@brainwav/design-system-guidance|either|ui,chatgpt_apps_sdk")
 	for spec in "${required_package_specs[@]}"; do
 		pkg="${spec%%|*}"
@@ -356,9 +459,9 @@ if [[ -f "$PACKAGE_JSON_PATH" ]]; then
 				break
 			fi
 		done
-		if [[ "$should_apply" -eq 1 ]] && ! has_required_package "$pkg" "$dependency_type"; then
-			echo "Error: required package '$pkg' is missing from $PACKAGE_JSON_PATH for explicit or detected UI/App SDK capabilities"
-			echo "Fix: npm i $pkg"
+		if [[ "$should_apply" -eq 1 ]] && ! has_required_package_or_global_tool "$pkg" "$dependency_type"; then
+			echo "Error: required package '$pkg' is missing from $PACKAGE_JSON_PATH and no global '$pkg' CLI fallback was detected"
+			echo "Fix: add '$pkg' to package.json or install the global design-system-guidance CLI via mise."
 			exit 1
 		fi
 	done

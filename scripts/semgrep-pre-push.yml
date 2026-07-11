@@ -21,7 +21,7 @@ rules:
           - pattern: execSync(...)
 
   - id: ts-no-shell-true
-    message: Avoid shell:true in child process options in src/** code.
+    message: "Avoid shell:true in child process options in src/** code."
     severity: ERROR
     languages: [javascript, typescript]
     pattern-either:
