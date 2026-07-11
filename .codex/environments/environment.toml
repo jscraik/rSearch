@@ -7,7 +7,7 @@ script = '''
 set -euo pipefail
 
 for candidate in "$HOME/.local/share/mise/shims" "$HOME/.local/bin" "/opt/homebrew/bin" "/opt/homebrew/sbin" "/usr/local/bin" "/usr/sbin" "/sbin"; do
-  if [[ -d "$candidate" && ":$PATH:" != *":$candidate:"* ]]; then
+  if [[ ":$PATH:" != *":$candidate:"* ]]; then
     PATH="$candidate:$PATH"
   fi
 done
@@ -17,6 +17,41 @@ if command -v mise >/dev/null 2>&1; then
   mise trust --yes .mise.toml || true
   mise install
 fi
+
+missing_tools=0
+require_tool() {
+  local cmd="$1"
+  local hint="$2"
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    echo "[codex] missing required tool: ${cmd} (${hint})"
+    missing_tools=1
+  fi
+}
+
+require_tool git "install Git and ensure it is on PATH"
+require_tool rg "install ripgrep (rg)"
+require_tool jq "install jq"
+if ! command -v fd >/dev/null 2>&1 && ! command -v fdfind >/dev/null 2>&1; then
+  echo "[codex] missing required tool: fd (or fdfind)"
+  missing_tools=1
+fi
+require_tool node "install Node.js runtime"
+if ! command -v pnpm >/dev/null 2>&1 && ! command -v corepack >/dev/null 2>&1 && [ ! -x /opt/homebrew/bin/pnpm ]; then
+  echo "[codex] missing required tool: pnpm (or corepack with pnpm support)"
+  missing_tools=1
+fi
+require_tool python3 "install Python 3 runtime"
+require_tool uv "install uv package manager"
+require_tool rustup "install rustup toolchain manager"
+require_tool rustc "install Rust compiler (rustc)"
+require_tool cargo "install Rust toolchain (cargo)"
+require_tool npm "install npm and ensure it is on PATH"
+
+if [ "$missing_tools" -ne 0 ]; then
+  echo "[codex] tooling check failed; install missing tools from tooling.md / mise before continuing."
+  exit 1
+fi
+
 npm ci || npm install
 '''
 
@@ -27,7 +62,7 @@ command = '''
 set -euo pipefail
 
 for candidate in "$HOME/.local/share/mise/shims" "$HOME/.local/bin" "/opt/homebrew/bin" "/opt/homebrew/sbin" "/usr/local/bin" "/usr/sbin" "/sbin"; do
-  if [[ -d "$candidate" && ":$PATH:" != *":$candidate:"* ]]; then
+  if [[ ":$PATH:" != *":$candidate:"* ]]; then
     PATH="$candidate:$PATH"
   fi
 done
@@ -37,6 +72,41 @@ if command -v mise >/dev/null 2>&1; then
   mise trust --yes .mise.toml || true
   mise install
 fi
+
+missing_tools=0
+require_tool() {
+  local cmd="$1"
+  local hint="$2"
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    echo "[codex] missing required tool: ${cmd} (${hint})"
+    missing_tools=1
+  fi
+}
+
+require_tool git "install Git and ensure it is on PATH"
+require_tool rg "install ripgrep (rg)"
+require_tool jq "install jq"
+if ! command -v fd >/dev/null 2>&1 && ! command -v fdfind >/dev/null 2>&1; then
+  echo "[codex] missing required tool: fd (or fdfind)"
+  missing_tools=1
+fi
+require_tool node "install Node.js runtime"
+if ! command -v pnpm >/dev/null 2>&1 && ! command -v corepack >/dev/null 2>&1 && [ ! -x /opt/homebrew/bin/pnpm ]; then
+  echo "[codex] missing required tool: pnpm (or corepack with pnpm support)"
+  missing_tools=1
+fi
+require_tool python3 "install Python 3 runtime"
+require_tool uv "install uv package manager"
+require_tool rustup "install rustup toolchain manager"
+require_tool rustc "install Rust compiler (rustc)"
+require_tool cargo "install Rust toolchain (cargo)"
+require_tool npm "install npm and ensure it is on PATH"
+
+if [ "$missing_tools" -ne 0 ]; then
+  echo "[codex] tooling check failed; install missing tools from tooling.md / mise before continuing."
+  exit 1
+fi
+
 npm ci || npm install
 '''
 
