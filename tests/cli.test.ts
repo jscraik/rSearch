@@ -7,11 +7,15 @@ import { tmpdir } from "node:os";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const cliPath = resolve(repoRoot, "src", "cli.ts");
+const emptySearchFeedUrl =
+  "data:text/xml,%3Cfeed%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2005%2FAtom%22%20xmlns%3Aopensearch%3D%22http%3A%2F%2Fa9.com%2F-%2Fspec%2Fopensearch%2F1.1%2F%22%3E%3Copensearch%3AtotalResults%3E0%3C%2Fopensearch%3AtotalResults%3E%3C%2Ffeed%3E#";
+
+const testApiArgs = ["--api-base-url", emptySearchFeedUrl];
 
 const runCli = (args: string[], input?: string, env?: Record<string, string>) =>
-  spawnSync(process.execPath, ["--import", "tsx", cliPath, ...args], {
+  spawnSync(process.execPath, ["--import", "tsx", cliPath, ...testApiArgs, ...args], {
     cwd: repoRoot,
-    env: { ...process.env, NODE_ENV: "test", ...env },
+    env: { ...process.env, NODE_ENV: "test", RSEARCH_USE_TEST_CLIENT: "1", ...env },
     encoding: "utf8",
     input
   });
@@ -303,7 +307,9 @@ describe("cli robot mode", () => {
   });
 
   it("corrects 'find' alias to 'search'", () => {
-    const result = runCli(["find", "cat:cs.AI", "--json"]);
+    const result = runCli(["find", "cat:cs.AI", "--json"], undefined, {
+      RSEARCH_API_BASE_URL: emptySearchFeedUrl
+    });
 
     const payload = JSON.parse(result.stdout);
     expect(payload.schema).toBe("arxiv.search.v1");
@@ -320,7 +326,9 @@ describe("cli robot mode", () => {
   });
 
   it("corrects flag typo --max-result to --max-results", () => {
-    const result = runCli(["search", "cat:cs.AI", "--max-result", "5", "--json"]);
+    const result = runCli(["search", "cat:cs.AI", "--max-result", "5", "--json"], undefined, {
+      RSEARCH_API_BASE_URL: emptySearchFeedUrl
+    });
 
     // Should succeed with corrected flag
     const payload = JSON.parse(result.stdout);
