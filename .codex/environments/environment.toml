@@ -13,6 +13,11 @@ for candidate in "$HOME/.local/share/mise/shims" "$HOME/.local/bin" "/opt/homebr
 done
 export PATH
 
+if command -v mise >/dev/null 2>&1; then
+  mise trust --yes .mise.toml || true
+  mise install
+fi
+
 missing_tools=0
 require_tool() {
   local cmd="$1"
@@ -47,10 +52,6 @@ if [ "$missing_tools" -ne 0 ]; then
   exit 1
 fi
 
-if command -v mise >/dev/null 2>&1; then
-  mise trust --yes .mise.toml || true
-  mise install
-fi
 npm ci || npm install
 '''
 
@@ -67,6 +68,11 @@ for candidate in "$HOME/.local/share/mise/shims" "$HOME/.local/bin" "/opt/homebr
 done
 export PATH
 
+if command -v mise >/dev/null 2>&1; then
+  mise trust --yes .mise.toml || true
+  mise install
+fi
+
 missing_tools=0
 require_tool() {
   local cmd="$1"
@@ -101,10 +107,6 @@ if [ "$missing_tools" -ne 0 ]; then
   exit 1
 fi
 
-if command -v mise >/dev/null 2>&1; then
-  mise trust --yes .mise.toml || true
-  mise install
-fi
 npm ci || npm install
 '''
 
