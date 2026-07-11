@@ -306,6 +306,7 @@ TMP_CONTEXT="$TMP_DIR/diagram-context.md"
 
 CONTEXT_SHA="$(shasum -a 256 "$TMP_CONTEXT" | awk '{print $1}')"
 GIT_HEAD="$(git -C "$ROOT_DIR" rev-parse --short HEAD 2>/dev/null || echo "unknown")"
+# shellcheck disable=SC2012
 DIAGRAM_COUNT="$(ls "$TMP_DIR/diagrams"/*.mmd | wc -l | tr -d ' ')"
 CHANGED=true
 
