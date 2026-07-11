@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 MD033 MD041 MD060 -->
+
 <div align="center">
   <img src="./brand/rsearch-brand-logo.png" alt="rSearch Logo" width="200" />
 </div>
@@ -172,6 +174,7 @@ rsearch has a **robot mode** that makes it forgiving and helpful when called by 
 ### Activation
 
 Robot mode activates automatically when:
+
 - stdout is not a TTY (piped/redirected output)
 - `--robot` flag is passed
 - `RSEARCH_ROBOT_MODE=1` environment variable is set
@@ -324,13 +327,13 @@ _from demo to duty_
 python3 /Users/jamiecraik/.codex/scripts/plan-graph-lint.py .agent/PLANS.md
 ```
 
-3. Run canonical verification:
+1. Run canonical verification:
 
 ```bash
 /Users/jamiecraik/.codex/scripts/verify-work.sh
 ```
 
-4. Follow global scaffold policy:
+1. Follow global scaffold policy:
 
 - `/Users/jamiecraik/.codex/instructions/agent-first-scaffold-spec.md`
 <!-- AGENT-FIRST-WORKFLOW:END -->
