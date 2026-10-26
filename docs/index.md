@@ -5,6 +5,7 @@ One sentence: This index points developers to the right doc for each task.
 Last updated: 2026-01-07
 
 ## Table of contents
+
 - [Doc requirements](#doc-requirements)
 - [Prerequisites](#prerequisites)
 - [Quickstart](#quickstart)
@@ -16,6 +17,7 @@ Last updated: 2026-01-07
 - [Evidence bundle](#evidence-bundle)
 
 ## Doc requirements
+
 - Audience: Developers and maintainers looking for the right doc quickly.
 - Scope: Navigation map to CLI, configuration, troubleshooting, and policy docs.
 - Non-scope: Detailed usage or configuration steps (see linked docs).
@@ -24,60 +26,81 @@ Last updated: 2026-01-07
 - Required approvals: 1 maintainer.
 
 ## Prerequisites
-- Required: Node.js 20+, npm
+
+- Required: Node.js 22.12.0 or newer, npm
 
 ## Quickstart
+
 ### 1) Read the main README
+
 - Start with `README.md`
 
 ### 2) Verify
+
 Expected output:
+
 - You can run `node dist/cli.js help` after building.
 
 ## Common tasks
+
 ### Use the CLI
+
 - See: `docs/cli-reference.md`
 
 ### Configure the CLI
+
 - See: `docs/configuration.md`
 
 ### Check license metadata
+
 - See: `docs/cli-reference.md` and `docs/faq.md`
+
 ```sh
 node dist/cli.js search "cat:cs.AI" --require-license
 ```
 
 ### Resolve common failures
+
 - See: `docs/troubleshooting.md`
 
 ### Review FAQs
+
 - See: `docs/faq.md`
 
 ### Understand the repository layout
+
 - See: `docs/structure.md`
 
 ### Track roadmap ideas
+
 - See: `docs/roadmap.md`
 
 ### Understand release versioning
+
 - See: `docs/release-policy.md`
 
 ### Review hook-governance scope defaults
+
 - See: [hooks-governance/scope-policy.md](hooks-governance/scope-policy.md)
 
 ## Risks and assumptions
+
 - Assumes filenames and paths stay stable across releases.
 - Index can become stale when new docs are added; update in the same PR.
 
 ## Troubleshooting
+
 ### Symptom: “Not sure which doc to read”
+
 Cause:
+
 - Docs are split by task.
 Fix:
 - Use this index and go to the matching section.
 
 ## Reference
-- Repo: https://github.com/jscraik/rSearch.git
+
+- Repo: <https://github.com/jscraik/rSearch.git>
 - Support: `SUPPORT.md`
 - Contributing: `CONTRIBUTING.md`
 - Governance: `GOVERNANCE.md`
@@ -86,6 +109,7 @@ Fix:
 - FAQ: `docs/faq.md`
 
 ## Acceptance criteria
+
 - [ ] All links resolve to existing files or URLs.
 - [ ] Doc list reflects current repo structure.
 - [ ] Risks and assumptions are explicit.
@@ -93,6 +117,7 @@ Fix:
 - [ ] Table of contents matches section headings.
 
 ## Evidence bundle
+
 - Standards mapping: CommonMark structure, accessibility (descriptive links).
 - Automated checks: vale run on 2026-01-07 (0 errors, 0 warnings).
 - Review artifact: Self-review completed on 2026-01-07.

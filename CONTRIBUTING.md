@@ -29,7 +29,7 @@ Last updated: 2026-01-07
 
 ## Prerequisites
 
-- Required: Node.js 20+, npm, GitHub account
+- Required: Node.js 22.12.0 or newer, npm, GitHub account
 - Optional: `gh` CLI for convenience
 
 ## Quickstart
@@ -100,7 +100,7 @@ git push origin my-change
 
 ## Risks and assumptions
 
-- Assumes contributors can run Node.js 20+ locally.
+- Assumes contributors can run Node.js 22.12.0 or newer locally.
 - Assumes `npm audit` is used for dependency hygiene; failures may require coordinated upgrades.
 - PR-only workflow may slow urgent fixes; use issues to flag urgency.
 

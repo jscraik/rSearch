@@ -38,8 +38,11 @@ if [[ -n "${CI_BASE_SHA:-}" && -n "${CI_HEAD_SHA:-}" ]]; then
 		echo "Unable to resolve docs lint diff range: $CI_BASE_SHA..$CI_HEAD_SHA" >&2
 		exit 1
 	fi
-	mapfile -d '' changed_markdown <"$changed_file_list"
-	lint_changed_markdown "No changed markdown files detected for docs lint." "${changed_markdown[@]}"
+	changed_markdown=()
+	while IFS= read -r -d '' path; do
+		changed_markdown+=("$path")
+	done <"$changed_file_list"
+	lint_changed_markdown "No changed markdown files detected for docs lint." ${changed_markdown[@]+"${changed_markdown[@]}"}
 fi
 
 if [[ "${DOCS_LINT_SCOPE:-all}" == "staged" ]]; then
@@ -49,8 +52,11 @@ if [[ "${DOCS_LINT_SCOPE:-all}" == "staged" ]]; then
 		echo "Unable to resolve staged docs lint diff." >&2
 		exit 1
 	fi
-	mapfile -d '' changed_markdown <"$changed_file_list"
-	lint_changed_markdown "No staged markdown files detected for docs lint." "${changed_markdown[@]}"
+	changed_markdown=()
+	while IFS= read -r -d '' path; do
+		changed_markdown+=("$path")
+	done <"$changed_file_list"
+	lint_changed_markdown "No staged markdown files detected for docs lint." ${changed_markdown[@]+"${changed_markdown[@]}"}
 fi
 
 exec "$MARKDOWNLINT" "**/*.md" "#node_modules" "#dist" "#artifacts" "#.diagram"
