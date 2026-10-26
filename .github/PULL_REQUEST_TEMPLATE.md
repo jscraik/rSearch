@@ -1,3 +1,9 @@
+# Pull request
+
+## Summary
+
+Describe the problem, intended outcome, and scope of this change.
+
 ## Description
 
 Brief description of the changes in this PR.
@@ -6,7 +12,8 @@ Brief description of the changes in this PR.
 
 - [ ] Bug fix (non-breaking change which fixes an issue)
 - [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- [ ] Breaking change (fix or feature that would cause existing functionality
+  to not work as expected)
 - [ ] Documentation update
 - [ ] Refactoring (no functional changes)
 - [ ] Performance improvement
@@ -37,3 +44,12 @@ Closes #(issue number)
 ## Additional Notes
 
 Any additional information or context about the PR.
+
+## Review artifacts
+
+- CodeRabbit: Record the review link or an explicit pending status.
+- Codex: Record the review link or an explicit pending status.
+
+## Notes
+
+Describe risks, rollback steps, and any validation limitations.
