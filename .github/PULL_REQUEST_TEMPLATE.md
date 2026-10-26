@@ -21,6 +21,9 @@ Brief description of the changes in this PR.
 
 ## Testing
 
+Record each exact validation command and its `pass`, `fail`, or `blocked`
+outcome. Explain any failure or blocker; checkboxes alone are not evidence.
+
 - [ ] Tests pass locally
 - [ ] Added tests for new functionality
 - [ ] Manual testing completed
