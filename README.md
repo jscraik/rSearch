@@ -6,6 +6,8 @@
 
 # rSearch helps developers search, fetch, and download arXiv papers from the terminal
 
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/jscraik/rSearch?utm_source=oss&utm_medium=github&utm_campaign=jscraik%2FrSearch&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
+
 [![License](https://img.shields.io/badge/license-MIT-informational.svg)](LICENSE)
 [![npm](https://img.shields.io/npm/v/@brainwav/rsearch)](https://www.npmjs.com/package/@brainwav/rsearch)
 [![CI](https://github.com/jscraik/rSearch/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jscraik/rSearch/actions/workflows/ci.yml)
