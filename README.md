@@ -41,7 +41,7 @@ Last updated: 2026-01-07
 
 ## Prerequisites
 
-- Required: Node.js 20+, npm
+- Required: Node.js 22.12.0 or newer, npm
 - Optional: Git, a POSIX shell
 
 ## Quickstart
