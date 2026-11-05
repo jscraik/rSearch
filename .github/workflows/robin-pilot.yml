@@ -1,0 +1,34 @@
+name: Robin advisory pilot
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: write
+
+jobs:
+  robin:
+    # Manual reviews only; Workers AI uses the account's shared free allowance.
+    # Cloudflare can bill overage on the paid plan.
+    if: ${{ github.event.issue.pull_request && github.event.comment.user.login == 'jscraik' && github.event.comment.body == '/robin' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Advisory diff review
+        uses: antongulin/robin@c96f54a4abd07090f37aefa3f9654b489808389c
+        with:
+          github-token: ${{ github.token }}
+          llm-api-key: ${{ secrets.ROBIN_CLOUDFLARE_API_TOKEN }}
+          llm-base-url: ${{ secrets.ROBIN_CLOUDFLARE_BASE_URL }}
+          model: "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+          agent-mode: "off"
+          request-changes: "false"
+          fail-on-high: "false"
+          max-diff-size: "30000"
+          estimated-request-token-budget: "12000"
+          max-output-tokens: "1500"
+          min-command-permission: "write"
+          llm-timeout-ms: "120000"
