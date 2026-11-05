@@ -1,0 +1,54 @@
+name: Robin advisory pilot
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: write
+
+jobs:
+  robin:
+    # Manual reviews only; Workers AI uses the account's shared free allowance.
+    # Cloudflare can bill overage on the paid plan.
+    if: ${{ github.event.issue.pull_request && github.event.comment.user.login == 'jscraik' && github.event.comment.body == '/robin' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fetch pinned Robin action
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: antongulin/robin
+          ref: c96f54a4abd07090f37aefa3f9654b489808389c
+          path: .robin-pilot-action
+          persist-credentials: false
+      - name: Preserve existing review decisions
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const file = '.robin-pilot-action/dist/index.js';
+          const invocation = 'await this.dismissStaleRobinReviews(owner, repo, pullNumber, review.id);';
+          const source = fs.readFileSync(file, 'utf8');
+          if (source.split(invocation).length !== 2) {
+            throw new Error('Robin dismissal call did not match the pinned advisory patch');
+          }
+          fs.writeFileSync(file, source.replace(invocation, '/* Advisory pilot: leave existing reviews unchanged. */'));
+          NODE
+      - name: Advisory diff review
+        uses: ./.robin-pilot-action
+        with:
+          github-token: ${{ github.token }}
+          llm-api-key: ${{ secrets.ROBIN_CLOUDFLARE_API_TOKEN }}
+          llm-base-url: ${{ secrets.ROBIN_CLOUDFLARE_BASE_URL }}
+          model: "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+          agent-mode: "off"
+          request-changes: "false"
+          fail-on-high: "false"
+          max-diff-size: "30000"
+          estimated-request-token-budget: "12000"
+          max-output-tokens: "1500"
+          min-command-permission: "write"
+          llm-timeout-ms: "120000"
