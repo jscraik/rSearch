@@ -90,6 +90,7 @@
     "fast-xml-builder": "^1.2.0",
     "ip-address": "^10.2.0",
     "minimatch": "^10.2.1",
+    "re2js": "2.8.7",
     "rollup": "^4.59.0"
   }
 }
