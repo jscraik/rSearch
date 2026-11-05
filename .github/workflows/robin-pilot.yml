@@ -17,8 +17,28 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Fetch pinned Robin action
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: antongulin/robin
+          ref: c96f54a4abd07090f37aefa3f9654b489808389c
+          path: .robin-pilot-action
+          persist-credentials: false
+      - name: Preserve existing review decisions
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const file = '.robin-pilot-action/dist/index.js';
+          const invocation = 'await this.dismissStaleRobinReviews(owner, repo, pullNumber, review.id);';
+          const source = fs.readFileSync(file, 'utf8');
+          if (source.split(invocation).length !== 2) {
+            throw new Error('Robin dismissal call did not match the pinned advisory patch');
+          }
+          fs.writeFileSync(file, source.replace(invocation, '/* Advisory pilot: leave existing reviews unchanged. */'));
+          NODE
       - name: Advisory diff review
-        uses: antongulin/robin@c96f54a4abd07090f37aefa3f9654b489808389c
+        uses: ./.robin-pilot-action
         with:
           github-token: ${{ github.token }}
           llm-api-key: ${{ secrets.ROBIN_CLOUDFLARE_API_TOKEN }}
