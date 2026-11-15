@@ -31,11 +31,22 @@ jobs:
           const fs = require('node:fs');
           const file = '.robin-pilot-action/dist/index.js';
           const invocation = 'await this.dismissStaleRobinReviews(owner, repo, pullNumber, review.id);';
+          const dispatch = '    async dispatch(request, record, signal) {';
+          const sdkRetries = '            maxRetries: 0,';
+          const sdkRequest = '        const req = {\n            method,\n            ...(body && { body: body }),';
           const source = fs.readFileSync(file, 'utf8');
-          if (source.split(invocation).length !== 2) {
-            throw new Error('Robin dismissal call did not match the pinned advisory patch');
+          if ([invocation, dispatch, sdkRetries, sdkRequest].some((marker) => source.split(marker).length !== 2)) {
+            throw new Error('Robin action did not match the pinned advisory and request-limit patch');
           }
-          fs.writeFileSync(file, source.replace(invocation, '/* Advisory pilot: leave existing reviews unchanged. */'));
+          // SDK retries are disabled in the pinned action. Count at dispatch so
+          // compatibility, empty-response and outer retries share one limit;
+          // reject redirects so one dispatch cannot send a second HTTP request.
+          const boundedDispatch = `${dispatch}\n        if (globalThis.__rsearchRobinPilotRequestSent) throw new Error('Robin pilot permits only one provider request per run');\n        globalThis.__rsearchRobinPilotRequestSent = true;`;
+          const boundedRequest = sdkRequest.replace('            method,', "            method,\n            redirect: 'error',");
+          fs.writeFileSync(file, source
+            .replace(invocation, '/* Advisory pilot: leave existing reviews unchanged. */')
+            .replace(dispatch, boundedDispatch)
+            .replace(sdkRequest, boundedRequest));
           NODE
       - name: Advisory diff review
         uses: ./.robin-pilot-action
