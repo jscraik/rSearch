@@ -197,6 +197,20 @@
       "freshnessWindowDays": 7,
       "class": "required",
       "githubCheckName": "CodeRabbit"
+    },
+    {
+      "policyId": "required-check-15",
+      "displayName": "harness-consumer-proof",
+      "sourceAppSlug": "github-actions",
+      "sourceAppId": "15368",
+      "externalIdPattern": "^harness-consumer-proof$",
+      "requiredOnEvents": [
+        "pull_request",
+        "merge_group"
+      ],
+      "freshnessWindowDays": 7,
+      "class": "required",
+      "githubCheckName": "harness-consumer-proof"
     }
   ]
 }

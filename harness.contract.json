@@ -40,7 +40,8 @@
       "check",
       "memory",
       "security-scan",
-      "CodeRabbit"
+      "CodeRabbit",
+      "harness-consumer-proof"
     ],
     "restrictDeletions": true,
     "blockForcePushes": true,
