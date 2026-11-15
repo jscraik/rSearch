@@ -13,7 +13,8 @@
         "merge_group"
       ],
       "freshnessWindowDays": 7,
-      "class": "required"
+      "class": "required",
+      "githubCheckName": "pr-template"
     },
     {
       "policyId": "required-check-2",
@@ -26,7 +27,8 @@
         "merge_group"
       ],
       "freshnessWindowDays": 7,
-      "class": "required"
+      "class": "required",
+      "githubCheckName": "risk-policy-gate"
     },
     {
       "policyId": "required-check-3",
@@ -39,7 +41,8 @@
         "merge_group"
       ],
       "freshnessWindowDays": 7,
-      "class": "required"
+      "class": "required",
+      "githubCheckName": "dependency-review"
     },
     {
       "policyId": "required-check-4",
@@ -52,7 +55,8 @@
         "merge_group"
       ],
       "freshnessWindowDays": 7,
-      "class": "required"
+      "class": "required",
+      "githubCheckName": "actions-pinning"
     },
     {
       "policyId": "required-check-5",
@@ -65,7 +69,8 @@
         "merge_group"
       ],
       "freshnessWindowDays": 7,
-      "class": "required"
+      "class": "required",
+      "githubCheckName": "consistency-drift-health"
     },
     {
       "policyId": "required-check-6",
@@ -78,7 +83,8 @@
         "merge_group"
       ],
       "freshnessWindowDays": 7,
-      "class": "required"
+      "class": "required",
+      "githubCheckName": "docs-gate"
     },
     {
       "policyId": "required-check-7",
@@ -91,7 +97,8 @@
         "merge_group"
       ],
       "freshnessWindowDays": 7,
-      "class": "required"
+      "class": "required",
+      "githubCheckName": "lint"
     },
     {
       "policyId": "required-check-8",
@@ -104,7 +111,8 @@
         "merge_group"
       ],
       "freshnessWindowDays": 7,
-      "class": "required"
+      "class": "required",
+      "githubCheckName": "typecheck"
     },
     {
       "policyId": "required-check-9",
@@ -117,7 +125,8 @@
         "merge_group"
       ],
       "freshnessWindowDays": 7,
-      "class": "required"
+      "class": "required",
+      "githubCheckName": "test"
     },
     {
       "policyId": "required-check-10",
@@ -130,7 +139,8 @@
         "merge_group"
       ],
       "freshnessWindowDays": 7,
-      "class": "required"
+      "class": "required",
+      "githubCheckName": "audit"
     },
     {
       "policyId": "required-check-11",
@@ -143,7 +153,8 @@
         "merge_group"
       ],
       "freshnessWindowDays": 7,
-      "class": "required"
+      "class": "required",
+      "githubCheckName": "check"
     },
     {
       "policyId": "required-check-12",
@@ -156,7 +167,8 @@
         "merge_group"
       ],
       "freshnessWindowDays": 7,
-      "class": "required"
+      "class": "required",
+      "githubCheckName": "memory"
     },
     {
       "policyId": "required-check-13",
@@ -169,7 +181,8 @@
         "merge_group"
       ],
       "freshnessWindowDays": 7,
-      "class": "required"
+      "class": "required",
+      "githubCheckName": "security-scan"
     },
     {
       "policyId": "required-check-14",
@@ -182,7 +195,8 @@
         "merge_group"
       ],
       "freshnessWindowDays": 7,
-      "class": "required"
+      "class": "required",
+      "githubCheckName": "CodeRabbit"
     }
   ]
 }

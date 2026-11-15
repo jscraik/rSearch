@@ -648,7 +648,8 @@
     "transitionStatusArtifactPath": ".harness/ci-provider-transition-status.json",
     "authorityConfigPath": "harness.contract.json",
     "requiredCheckManifestPath": ".harness/ci-required-checks.json",
-    "trustedPolicyRef": "refs/heads/main"
+    "trustedPolicyRef": "refs/heads/main",
+    "primaryCheckName": "pr-pipeline"
   },
   "contextIntegrityPolicy": {
     "mode": "shadow",

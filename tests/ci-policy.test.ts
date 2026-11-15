@@ -26,6 +26,7 @@ type Job = { name?: string; steps: Step[]; "continue-on-error"?: boolean };
 type Workflow = { on: Record<string, unknown>; jobs: Record<string, Job> };
 type Check = {
 	displayName: string;
+	githubCheckName: string;
 	sourceAppSlug: string;
 	sourceAppId: string;
 	externalIdPattern: string;
@@ -33,6 +34,7 @@ type Check = {
 };
 type Manifest = { activeProvider: string; requiredChecks: Check[] };
 type Contract = {
+	ciProviderPolicy: { primaryCheckName: string };
 	branchProtection: { requiredChecks: string[] };
 	reviewPolicy: { requiredChecks: string[] };
 };
@@ -55,6 +57,11 @@ function inputs() {
 
 function verify({ manifest, contract, workflows }: ReturnType<typeof inputs>) {
 	assert.equal(manifest.activeProvider, "github-actions");
+	assert.equal(
+		contract.ciProviderPolicy.primaryCheckName,
+		"pr-pipeline",
+		"Preserve the legacy review-check failure/fallback order",
+	);
 	const names = manifest.requiredChecks.map((check) => check.displayName);
 	assert.equal(new Set(names).size, names.length, "Duplicate required check");
 	assert.deepEqual(
@@ -65,6 +72,7 @@ function verify({ manifest, contract, workflows }: ReturnType<typeof inputs>) {
 	for (const name of contract.reviewPolicy.requiredChecks)
 		assert(names.includes(name), `Unmapped review control: ${name}`);
 	for (const check of manifest.requiredChecks) {
+		assert.equal(check.githubCheckName, check.displayName);
 		assert.equal(check.externalIdPattern, `^${check.displayName}$`);
 		if (check.displayName === "CodeRabbit") {
 			assert.equal(check.sourceAppSlug, "coderabbitai");
