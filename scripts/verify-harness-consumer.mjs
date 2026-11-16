@@ -74,11 +74,11 @@ try {
 	assert.equal(actual.ok, true, actual.error);
 	assert.equal(actual.value.length, manifest.requiredChecks.length);
 	const requested = resolveDefaultReviewCheckName(contract, contractPath);
-	assert.equal(requested, "pr-pipeline");
+	assert.equal(requested, "check");
 	const head = "a".repeat(40);
 	const primary = {
 		id: 10,
-		name: "pr-pipeline",
+		name: "check",
 		head_sha: head,
 		status: "completed",
 		conclusion: "failure",
@@ -91,11 +91,15 @@ try {
 		conclusion: "success",
 	};
 	const both = resolveReviewCheckResult([primary, fallback], requested, head);
-	assert.equal(both.resolvedCheckName, "pr-pipeline");
+	assert.equal(both.resolvedCheckName, "check");
 	assert.equal(both.checkResult.conclusion, "failure");
 	const onlyFallback = resolveReviewCheckResult([fallback], requested, head);
-	assert.equal(onlyFallback.resolvedCheckName, "risk-policy-gate");
-	assert.equal(onlyFallback.checkResult.conclusion, "success");
+	assert.equal(onlyFallback.resolvedCheckName, "check");
+	assert.deepEqual(onlyFallback.checkResult, {
+		found: false,
+		status: "not_found",
+		conclusion: null,
+	});
 	const sources = resolveRequiredCheckSources(contract, contractPath, [
 		"security-scan",
 		"CodeRabbit",
@@ -132,7 +136,7 @@ try {
 			manifest_entries: actual.value.length,
 			requested_check: requested,
 			failing_primary_preserved: both.checkResult.conclusion === "failure",
-			fallback_when_primary_absent: onlyFallback.resolvedCheckName,
+			missing_primary_not_replaced: onlyFallback.checkResult.found === false,
 			wrong_source_rejected: true,
 			malformed_mapping_rejected: true,
 			review_clearance: false,

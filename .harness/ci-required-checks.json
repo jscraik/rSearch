@@ -3,6 +3,20 @@
   "activeProvider": "github-actions",
   "requiredChecks": [
     {
+      "policyId": "required-check-11",
+      "displayName": "check",
+      "sourceAppSlug": "github-actions",
+      "sourceAppId": "15368",
+      "externalIdPattern": "^check$",
+      "requiredOnEvents": [
+        "pull_request",
+        "merge_group"
+      ],
+      "freshnessWindowDays": 7,
+      "class": "required",
+      "githubCheckName": "check"
+    },
+    {
       "policyId": "required-check-1",
       "displayName": "pr-template",
       "sourceAppSlug": "github-actions",
@@ -141,20 +155,6 @@
       "freshnessWindowDays": 7,
       "class": "required",
       "githubCheckName": "audit"
-    },
-    {
-      "policyId": "required-check-11",
-      "displayName": "check",
-      "sourceAppSlug": "github-actions",
-      "sourceAppId": "15368",
-      "externalIdPattern": "^check$",
-      "requiredOnEvents": [
-        "pull_request",
-        "merge_group"
-      ],
-      "freshnessWindowDays": 7,
-      "class": "required",
-      "githubCheckName": "check"
     },
     {
       "policyId": "required-check-12",

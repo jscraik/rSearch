@@ -22,7 +22,12 @@ type Step = {
 	with?: Record<string, unknown>;
 	"continue-on-error"?: boolean;
 };
-type Job = { name?: string; steps: Step[]; "continue-on-error"?: boolean };
+type Job = {
+	name?: string;
+	steps: Step[];
+	if?: string | boolean;
+	"continue-on-error"?: boolean;
+};
 type Workflow = { on: Record<string, unknown>; jobs: Record<string, Job> };
 type Check = {
 	displayName: string;
@@ -34,7 +39,7 @@ type Check = {
 };
 type Manifest = { activeProvider: string; requiredChecks: Check[] };
 type Contract = {
-	ciProviderPolicy: { primaryCheckName: string };
+	ciProviderPolicy: { primaryCheckName?: string };
 	branchProtection: { requiredChecks: string[] };
 	reviewPolicy: { requiredChecks: string[] };
 };
@@ -59,9 +64,10 @@ function verify({ manifest, contract, workflows }: ReturnType<typeof inputs>) {
 	assert.equal(manifest.activeProvider, "github-actions");
 	assert.equal(
 		contract.ciProviderPolicy.primaryCheckName,
-		"pr-pipeline",
-		"Preserve the legacy review-check failure/fallback order",
+		undefined,
+		"Use the published consumer's manifest default without a provider override",
 	);
+	assert.equal(manifest.requiredChecks[0].githubCheckName, "check");
 	const names = manifest.requiredChecks.map((check) => check.displayName);
 	assert.equal(new Set(names).size, names.length, "Duplicate required check");
 	assert.deepEqual(
@@ -90,6 +96,14 @@ function verify({ manifest, contract, workflows }: ReturnType<typeof inputs>) {
 					: [],
 			);
 			assert(matching.length > 0, `No ${event} job emits ${check.displayName}`);
+			for (const job of matching)
+				assert.equal(
+					job.if,
+					check.displayName === "risk-policy-gate"
+						? "${{ always() && (github.event_name == 'merge_group' || needs.pr-template.result == 'success') }}"
+						: undefined,
+					`Unexpected condition on required job: ${check.displayName}`,
+				);
 			assert(
 				matching.every(
 					(job) =>
@@ -118,6 +132,17 @@ describe("required CI policy", () => {
 				)!.sourceAppId = "15368";
 			if (mutation === "contract")
 				data.contract.branchProtection.requiredChecks.push("missing-control");
+			expect(() => verify(data)).toThrow();
+		}
+	});
+
+	it("rejects disabled required jobs while retaining documented conditions", () => {
+		verify(inputs());
+		for (const condition of ["false", "${{ false }}", false]) {
+			const data = inputs();
+			for (const workflow of data.workflows)
+				if (workflow.jobs["security-scan"])
+					Object.assign(workflow.jobs["security-scan"], { if: condition });
 			expect(() => verify(data)).toThrow();
 		}
 	});
