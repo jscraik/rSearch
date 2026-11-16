@@ -7,7 +7,6 @@ import {
 	mkdtempSync,
 	readFileSync,
 	rmSync,
-	statSync,
 	writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -41,9 +40,10 @@ try {
 		],
 		{ timeout: 65000 },
 	);
-	assert(statSync(archive).size <= 33554432, "Oversized published archive");
+	const archiveBytes = readFileSync(archive);
+	assert(archiveBytes.length <= 33554432, "Oversized published archive");
 	assert.equal(
-		createHash("sha512").update(readFileSync(archive)).digest("base64"),
+		createHash("sha512").update(archiveBytes).digest("base64"),
 		integrity,
 		"Published archive integrity changed",
 	);
