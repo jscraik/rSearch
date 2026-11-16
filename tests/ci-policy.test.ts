@@ -147,6 +147,34 @@ describe("required CI policy", () => {
 		}
 	});
 
+	it("keeps the consumer proof executable without promoting branch protection", () => {
+		const { manifest, contract } = inputs();
+		expect(
+			manifest.requiredChecks.some(
+				(check) => check.displayName === "harness-consumer-proof",
+			),
+		).toBe(false);
+		expect(contract.branchProtection.requiredChecks).not.toContain(
+			"harness-consumer-proof",
+		);
+		const pipeline = parse(
+			readFileSync(".github/workflows/pr-pipeline.yml", "utf8"),
+		) as Workflow;
+		expect(pipeline.on).toHaveProperty("pull_request");
+		expect(pipeline.on).toHaveProperty("merge_group");
+		const proof = pipeline.jobs["harness-consumer-proof"];
+		expect(proof.if).toBeUndefined();
+		expect(proof["continue-on-error"]).toBeUndefined();
+		expect(
+			proof.steps.some((step) => step.with?.["node-version"] === "26.3.0"),
+		).toBe(true);
+		expect(
+			proof.steps.some(
+				(step) => step.run === "node scripts/verify-harness-consumer.mjs",
+			),
+		).toBe(true);
+	});
+
 	it("runs real dependency and security controls without success fallbacks", () => {
 		const pipeline = parse(
 			readFileSync(".github/workflows/pr-pipeline.yml", "utf8"),
