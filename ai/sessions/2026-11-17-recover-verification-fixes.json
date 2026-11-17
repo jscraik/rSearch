@@ -1,0 +1,33 @@
+{
+  "session_id": "2026-11-17-recover-verification-fixes",
+  "date": "2026-11-17",
+  "agent": "codex",
+  "summary": "Review recovered local work against merged main and prepare the remaining verification fixes for a PR.",
+  "actions": [
+    "Keep npm command alignment and accurate project-local verification guidance.",
+    "Drop the saved cleanup subshell rewrite because main already safely quotes its cleanup trap.",
+    "Exercise project and workspace verification in disposable fixtures, including paths with spaces, failure propagation and retained reports.",
+    "Guard existing invalid-limit CLI tests against accidental network requests.",
+    "Retain the original stash and recovery artifacts until the changes are safely merged."
+  ],
+  "validation": [
+    "npm exec -- vitest run tests/verify-work.test.ts -> fail before the runner fix (six cases invoke the rejected pnpm stub).",
+    "npm exec -- vitest run tests/verify-work.test.ts tests/cli.test.ts -> pass (48 tests after the npm-only fix).",
+    "bash scripts/verify-work.sh --fast --all -> pass (preflight, governance, lint, typecheck and 78 tests).",
+    "npm exec -- markdownlint-cli2 AGENTS.md CLAUDE.md README.md -> pass after correcting the touched Claude guidance formatting.",
+    "npm run audit -> pass at the high-severity threshold through normal host approval (12 existing low/moderate findings, no high/critical findings)."
+  ],
+  "independent_review": {
+    "reviewer": "Codex read-only review agent",
+    "result": "No findings in the complete local candidate, including the four new files.",
+    "verification": "npm exec -- vitest run tests/verify-work.test.ts -> pass (6 tests); git diff --check -> pass.",
+    "wrapper_sha256": "377eef686f1592872d6f1ca4d4b7c81eeeb9594a1a506ca853f70ba4fd8615db",
+    "wrapper_tests_sha256": "903e782050b5ab2e71b1511850653e341da37055547b89844af3b5c608e337b1",
+    "limits": "Local review only; no hosted checks or merge-readiness claim."
+  },
+  "human_verification": "No human review is claimed; independent review and hosted PR checks are separate from these local results.",
+  "artifacts": {
+    "prompt": "ai/prompts/2026-11-17-recover-verification-fixes.yaml",
+    "session": "ai/sessions/2026-11-17-recover-verification-fixes.json"
+  }
+}
