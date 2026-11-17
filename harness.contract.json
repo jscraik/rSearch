@@ -29,8 +29,8 @@
     "requiredChecks": [
       "pr-template",
       "risk-policy-gate",
-      "dependency-scan",
-      "orb-pinning",
+      "dependency-review",
+      "actions-pinning",
       "consistency-drift-health",
       "docs-gate",
       "lint",

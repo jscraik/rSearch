@@ -940,8 +940,8 @@ const cli = yargs(argvForYargs)
               .example("$0 categories list --ids-only --limit 10", "Get first 10 category IDs")
               .epilog("Pipeline: rsearch categories list --ids-only --group \"Computer Science\""),
           async (args) => {
-            const taxonomy = await loadTaxonomy(args);
             const limit = args.limit !== undefined ? coercePositiveInt("limit")(args.limit) : undefined;
+            const taxonomy = await loadTaxonomy(args);
             const categories = filterByGroup(taxonomy.categories, args.group);
             const limited = limit ? categories.slice(0, limit) : categories;
             const summary = limit

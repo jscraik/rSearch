@@ -83,7 +83,8 @@
     "typedoc-plugin-markdown": "^4.10.0",
     "typescript": "^5.9.3",
     "vite": "^8.0.5",
-    "vitest": "^4.1.4"
+    "vitest": "^4.1.4",
+    "yaml": "2.8.3"
   },
   "overrides": {
     "basic-ftp": "^6.0.1",
