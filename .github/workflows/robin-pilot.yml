@@ -1,6 +1,8 @@
 name: Robin advisory pilot
 
 on:
+  pull_request:
+    types: [opened]
   issue_comment:
     types: [created]
 
@@ -11,9 +13,15 @@ permissions:
 
 jobs:
   robin:
-    # Manual reviews only; Workers AI uses the account's shared free allowance.
-    # Cloudflare can bill overage on the paid plan.
-    if: ${{ github.event.issue.pull_request && github.event.comment.user.login == 'jscraik' && github.event.comment.body == '/robin' }}
+    # Fork and Dependabot events cannot access Actions secrets; use /robin.
+    # Keep these secrets bound to the dedicated Workers Free account.
+    if: >-
+      ${{ (github.event_name == 'pull_request' &&
+           github.event.pull_request.head.repo.full_name == github.repository &&
+           github.actor != 'dependabot[bot]') ||
+          (github.event_name == 'issue_comment' && github.event.issue.pull_request &&
+           github.event.comment.user.login == 'jscraik' && github.event.comment.body == '/robin') }}
+    continue-on-error: true
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -56,6 +64,8 @@ jobs:
           llm-base-url: ${{ secrets.ROBIN_CLOUDFLARE_BASE_URL }}
           model: "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
           agent-mode: "off"
+          review-on-synchronize: "false"
+          bot-review-policy: "all"
           request-changes: "false"
           fail-on-high: "false"
           max-diff-size: "30000"
