@@ -323,20 +323,24 @@ _from demo to duty_
 <!-- AGENT-FIRST-WORKFLOW:START -->
 ## Agent-first workflow
 
-1. Create/update implementation plan using `.agent/PLANS.md` contract.
-2. Validate plan graph:
+When a task explicitly selects the scaffold convention, create or update the
+implementation plan using the `.agent/PLANS.md` contract and validate its graph:
 
 ```bash
 python3 /Users/jamiecraik/.codex/scripts/plan-graph-lint.py .agent/PLANS.md
 ```
 
-1. Run canonical verification:
+Run project verification from the repository root:
 
 ```bash
-/Users/jamiecraik/.codex/scripts/verify-work.sh
+bash scripts/verify-work.sh --fast --all
 ```
 
-1. Follow global scaffold policy:
+This repository-owned runner checks preflight, project-local governance, lint,
+typecheck and the full test suite. A global Configs verifier result does not
+verify rSearch. See [AGENTS.md](./AGENTS.md) for the command's scope.
+
+For a selected scaffold task, follow the global scaffold policy:
 
 - `/Users/jamiecraik/.codex/instructions/agent-first-scaffold-spec.md`
 <!-- AGENT-FIRST-WORKFLOW:END -->

@@ -273,7 +273,9 @@ describe("cli categories list --limit", () => {
   });
 
   it("rejects --limit 0", () => {
-    const result = runCli(["categories", "list", "--limit", "0", "--json"]);
+    const result = runCli(["categories", "list", "--limit", "0", "--json"], undefined, {
+      NODE_OPTIONS: `--import=${JSON.stringify(resolve(repoRoot, "tests/fixtures/path with spaces/reject-fetch.mjs"))}`
+    });
 
     expect(result.status).toBe(2);
     const payload = JSON.parse(result.stdout);
@@ -281,7 +283,9 @@ describe("cli categories list --limit", () => {
   });
 
   it("rejects non-numeric --limit", () => {
-    const result = runCli(["categories", "list", "--limit", "abc", "--json"]);
+    const result = runCli(["categories", "list", "--limit", "abc", "--json"], undefined, {
+      NODE_OPTIONS: `--import=${JSON.stringify(resolve(repoRoot, "tests/fixtures/path with spaces/reject-fetch.mjs"))}`
+    });
 
     expect(result.status).toBe(2);
     const payload = JSON.parse(result.stdout);

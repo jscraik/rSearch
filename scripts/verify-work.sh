@@ -48,7 +48,7 @@ detect_stack() {
 
 preflight_bins_csv() {
 	case "$1" in
-		js) echo 'git,bash,sed,rg,jq,curl,node,python3,pnpm' ;;
+		js) echo 'git,bash,sed,rg,jq,curl,node,python3,npm' ;;
 		py) echo 'git,bash,sed,rg,jq,curl,python3' ;;
 		rust) echo 'git,bash,sed,rg,jq,curl,python3,cargo' ;;
 		repo) echo 'git,bash,sed,rg,jq,curl,python3' ;;
@@ -283,23 +283,23 @@ esac
 if [[ "$fast_mode" -eq 0 ]]; then
 	echo
 	echo "==> check"
-	pnpm check
+	npm run check
 	exit 0
 fi
 
 echo
 echo "==> lint"
-pnpm lint
+npm run lint
 
 echo
 echo "==> typecheck"
-pnpm typecheck
+npm run typecheck
 
 if [[ "$changed_only" -eq 1 ]]; then
 	if has_package_script "test:related"; then
 		echo
 		echo "==> test:related"
-		pnpm test:related
+		npm run test:related
 	else
 		if [[ "$strict_mode" -eq 1 ]]; then
 			echo "[verify-work] missing package script: test:related" >&2
@@ -308,10 +308,10 @@ if [[ "$changed_only" -eq 1 ]]; then
 		echo "[verify-work] test:related unavailable; falling back to full test run"
 		echo
 		echo "==> test"
-		pnpm test
+		npm test
 	fi
 else
 	echo
 	echo "==> test"
-	pnpm test
+	npm test
 fi

@@ -1,0 +1,9 @@
+id: pr-recover-verification-fixes-2026-11-17
+tool: codex
+mode: normal
+task: "Review the preserved seven-file patch, keep only changes still needed, run the rSearch checks and open a PR. Keep the stash until the changes are safely merged."
+constraints:
+  - Preserve the stash, recovery evidence, workflow pins and merged CLI fixes.
+  - Use repository checks, normal signing and readiness gates; no release or credential changes.
+outputs_expected:
+  - Reviewed verification fixes, regression tests and a checked PR.
