@@ -19,4 +19,4 @@ if [[ ${#related_sources[@]} -eq 0 ]]; then
 	exit 0
 fi
 
-pnpm exec vitest related --run --passWithNoTests "${related_sources[@]}"
+npm exec -- vitest related --run --passWithNoTests "${related_sources[@]}"

@@ -6,12 +6,13 @@
   "validation": [
     "Initial wrapper cases: 6 fail before npm fix; focused 48 and canonical 78 tests pass afterward.",
     "Spaced preload path: 2 invalid-limit cases fail before quoting; all 3 limit cases pass after quoting.",
+    "Changed-only helper: 4 cases fail before npm fix; all 12 wrapper cases and canonical 84 tests pass afterward.",
     "Current lockfile audit fails on unpatched picomatch GHSA-fc5q-39xc-vjpf; CI remains blocking."
   ],
   "independent_review": {
-    "result": "Initial local review: no findings. Hosted Codex then found the unquoted preload path, fixed with a spaced-path regression.",
+    "result": "Hosted findings fixed: spaced preload, changed-only npm execution and template disclosure guidance. Independent follow-up: no findings; 12 wrapper cases pass.",
     "wrapper_sha256": "377eef686f1592872d6f1ca4d4b7c81eeeb9594a1a506ca853f70ba4fd8615db",
-    "wrapper_tests_sha256": "903e782050b5ab2e71b1511850653e341da37055547b89844af3b5c608e337b1"
+    "wrapper_tests_sha256": "12f01b07e42299f922f137d7e06de7a8246b14bb576248debf013967e46ebbe8"
   },
   "retention": "Keep the original stash and recovery artifacts until safe merge. No merge clearance is claimed."
 }

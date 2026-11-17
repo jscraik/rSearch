@@ -25,12 +25,9 @@ Claude must:
    ```
 
 3. **Reference exact paths in PR body**:
-   - Under **AI assistance** section:
+   - Under **Additional Notes** in the existing PR template:
      - Prompt: `ai/prompts/YYYY-MM-DD-<slug>.yaml`
      - Session: `ai/sessions/YYYY-MM-DD-<slug>.json`
-   - In **AI Session Log** details:
-     - Log file: `ai/sessions/YYYY-MM-DD-<slug>.json`
-     - Prompt file: `ai/prompts/YYYY-MM-DD-<slug>.yaml`
 
 4. **Do NOT**:
    - Embed prompt/log excerpts in the PR body
