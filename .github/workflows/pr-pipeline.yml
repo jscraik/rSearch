@@ -2,6 +2,7 @@ name: Harness PR Pipeline
 
 on:
   pull_request:
+    types: [opened, reopened, synchronize, edited]
   merge_group:
 
 permissions:
@@ -152,29 +153,31 @@ jobs:
       pull-requests: read
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - name: Detect dependency review support
-        id: dependency-review-support
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
-        with:
-          script: |
-            const { owner, repo } = context.repo;
-            const response = await github.rest.repos.get({ owner, repo });
-            const security = response.data.security_and_analysis ?? {};
-            const advanced = security.advanced_security?.status === 'enabled';
-            const dependencyGraph = security.dependency_graph?.status === 'enabled';
-            core.setOutput('supported', advanced && dependencyGraph ? 'true' : 'false');
       - name: Run dependency review (pull_request)
-        if: github.event_name == 'pull_request' && ${{ steps.dependency-review-support.outputs.supported == 'true' }}
+        if: github.event_name == 'pull_request'
         uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
           fail-on-severity: high
-      - name: Skip dependency review when repository support is unavailable
-        if: github.event_name == 'pull_request' && ${{ steps.dependency-review-support.outputs.supported != 'true' }}
-        run: echo "Dependency review unsupported (requires dependency graph + advanced security); skipping."
-      - name: Skip dependency review for merge queue
-        if: github.event_name == 'merge_group'
-        run: echo "Dependency review enforced on pull_request; merge_group runs are no-op."
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+      - name: Audit the complete dependency tree, including merge queues
+        run: npm ci && npm run audit
+
+  harness-consumer-proof:
+    name: harness-consumer-proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [risk-policy-gate]
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "26.3.0"
+      - name: Verify actual published harness lookup and failure ordering
+        run: node scripts/verify-harness-consumer.mjs
 
   actions-pinning:
     name: actions-pinning
@@ -471,6 +474,76 @@ jobs:
           fi
       - name: Run full check
         run: npm run check
+
+  docs-gate:
+    name: docs-gate
+    runs-on: ubuntu-latest
+    needs: [risk-policy-gate]
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+      - run: npm ci
+      - name: Lint Markdown in the complete proposed diff
+        env:
+          CI_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+          CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}
+        run: |
+          test -n "$CI_BASE_SHA" && test -n "$CI_HEAD_SHA"
+          npm run docs:lint
+
+  security-scan:
+    name: security-scan
+    runs-on: ubuntu-latest
+    needs: [risk-policy-gate]
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      # The installer owns and deletes workspace/trivy. Run it before the
+      # project checkout so it cannot remove a tracked project directory.
+      - name: Install pinned Trivy before checking out project files
+        uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
+        with:
+          version: v0.69.3
+          cache: false
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+      - run: npm ci
+      - name: Audit dependency vulnerabilities
+        run: npm run audit
+      - name: Scan repository secrets
+        env:
+          SCAN_BASE: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+          SCAN_HEAD: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$SCAN_BASE" =~ ^[0-9a-f]{40}$ && "$SCAN_HEAD" =~ ^[0-9a-f]{40}$ ]]
+          scan_dir="$(mktemp -d)"
+          trap 'rm -rf "$scan_dir"' EXIT
+          curl --fail --location --silent --show-error --max-time 120 \
+            --output "$scan_dir/gitleaks.tgz" \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          printf '%s  %s\n' 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb "$scan_dir/gitleaks.tgz" | sha256sum --check --strict
+          tar -xzf "$scan_dir/gitleaks.tgz" -C "$scan_dir" gitleaks
+          "$scan_dir/gitleaks" git --redact --exit-code 1 --log-opts="$SCAN_BASE..$SCAN_HEAD --diff-merges=first-parent" .
+      - name: Scan filesystem vulnerabilities and secrets
+        run: trivy fs --severity HIGH,CRITICAL --exit-code 1 --no-progress .
+      - name: Scan code security
+        run: |
+          docker run --rm --volume "$PWD:/src:ro" --workdir /src \
+            semgrep/semgrep@sha256:afbc982af6778a1c4eaf69fca866ad083dd52c627e5d7d5ee1fd38c061c628bf \
+            semgrep scan --config p/security-audit --error --metrics off --disable-version-check .
 
   memory:
     name: memory
