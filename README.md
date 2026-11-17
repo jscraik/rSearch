@@ -258,6 +258,7 @@ Fix:
 
 ## Reference
 
+- Reviews: [Advisory Robin reviews and free-allowance limits](docs/robin-review.md).
 - Repo: <https://github.com/jscraik/rSearch.git>
 - Commands:
   - `search`, `fetch`, `download`, `urls`, `categories`, `config`, `help`
