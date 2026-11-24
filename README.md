@@ -1,10 +1,25 @@
 <!-- markdownlint-disable MD013 MD033 MD041 MD060 -->
 
 <div align="center">
-  <img src="./brand/rsearch-brand-logo.png" alt="rSearch Logo" width="200" />
+  <img src="./brand/rSearch-brand-logo.png" alt="rSearch Logo" width="200" />
 </div>
 
-# rSearch helps developers search, fetch, and download arXiv papers from the terminal
+# rSearch
+
+Search arXiv, fetch paper metadata, and download PDFs from your terminal. Export JSON, Markdown, or URLs for research workflows and AI agents.
+
+## Quickstart
+
+You need **Node.js 22.12.0 or newer** and npm. Run these commands from any directory; the search uses the public arXiv API.
+
+```sh
+npm install -g @brainwav/rsearch
+rsearch search "cat:cs.AI" --max-results 5
+```
+
+**First result:** a `Total results` summary followed by up to five paper IDs and titles. Results depend on the live arXiv catalogue. Use `rsearch --help` to check the installation without making an API request.
+
+Next: [download a PDF](#download-pdfs), [export Markdown or JSON](#export-markdown-or-json-with-extracted-text), or [use robot mode](#robot-mode-for-ai-agents-and-scripts).
 
 ![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/jscraik/rSearch?utm_source=oss&utm_medium=github&utm_campaign=jscraik%2FrSearch&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
 
@@ -14,55 +29,24 @@
 [![Security Policy](https://img.shields.io/badge/security-policy-informational.svg)](SECURITY.md)
 [![Issues](https://img.shields.io/github/issues/jscraik/rSearch)](https://github.com/jscraik/rSearch/issues)
 
-One sentence: This repo provides a Node/TypeScript CLI for arXiv search, metadata fetch, downloads, category browsing, and URL output.
-
-Last updated: 2026-01-07
+Last updated: 2026-11-24
 
 ## Table of contents
 
-- [Doc requirements](#doc-requirements)
-- [Prerequisites](#prerequisites)
 - [Quickstart](#quickstart)
 - [Common tasks](#common-tasks)
 - [Risks and assumptions](#risks-and-assumptions)
 - [Troubleshooting](#troubleshooting)
 - [Reference](#reference)
+- [Contributing](#contributing)
+- [Doc requirements](#doc-requirements)
 - [Acceptance criteria](#acceptance-criteria)
 - [Evidence bundle](#evidence-bundle)
-
-## Doc requirements
-
-- Audience: Developers and researchers using the CLI to search, fetch, and download arXiv papers.
-- Scope: Installation, core commands, verification steps, and usage constraints.
-- Non-scope: Contribution workflow, security reporting, and internal architecture (see `CONTRIBUTING.md`, `SECURITY.md`, `docs/ADR-001-architecture.md`).
-- Doc owner: jscraik.
-- Review cadence: Each release.
-- Required approvals: 1 maintainer.
 
 ## Prerequisites
 
 - Required: Node.js 22.12.0 or newer, npm
 - Optional: Git, a POSIX shell
-
-## Quickstart
-
-### 1) Install
-
-```sh
-npm install -g @brainwav/rsearch
-```
-
-### 2) Run a search
-
-```sh
-rsearch search "cat:cs.AI" --max-results 5
-```
-
-### 3) Verify
-
-Expected output:
-
-- A list of results with IDs and titles.
 
 ## Common tasks
 
@@ -289,6 +273,31 @@ Fix:
 - `docs/roadmap.md`
 - `docs/ADR-001-architecture.md`
 
+## Contributing
+
+To work on the CLI, start in a new checkout:
+
+```sh
+git clone https://github.com/jscraik/rSearch.git
+cd rSearch
+npm ci
+npm run lint:types
+npm test
+npm run build
+node dist/cli.js --help
+```
+
+The last command prints the CLI help from your checkout. See [CONTRIBUTING.md](CONTRIBUTING.md) for the complete review and validation requirements.
+
+## Doc requirements
+
+- Audience: Developers and researchers using the CLI to search, fetch, and download arXiv papers.
+- Scope: Installation, core commands, verification steps, and usage constraints.
+- Non-scope: Contribution workflow, security reporting, and internal architecture (see `CONTRIBUTING.md`, `SECURITY.md`, `docs/ADR-001-architecture.md`).
+- Doc owner: jscraik.
+- Review cadence: Each release.
+- Required approvals: 1 maintainer.
+
 ## Acceptance criteria
 
 - [ ] Doc requirements reflect current CLI scope and ownership.
@@ -298,6 +307,8 @@ Fix:
 - [ ] Links resolve to existing files or URLs.
 
 ## Evidence bundle
+
+The following is the historical documentation review record from 2026-01-07. Validation of later changes belongs with each change's review evidence.
 
 - Standards mapping: CommonMark structure, accessibility (descriptive links), security/privacy guidance for license usage.
 - Brand compliance: Documentation signature added; assets present in `brand/`.
@@ -319,6 +330,8 @@ Fix:
 
 **brAInwav**  
 _from demo to duty_
+
+The following managed workflow is for the maintainer's configured workstation. Its absolute paths refer to that environment; public contributors should start with [Contributing](#contributing) above. Maintainer verification and PR requirements still apply before merge.
 
 <!-- AGENT-FIRST-WORKFLOW:START -->
 ## Agent-first workflow
